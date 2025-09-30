@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Lấy code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # Cài deps (dùng package.json ở root monorepo)
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      # Lint
+      - name: Lint
+        run: npx turbo run lint
+
+      # Test
+      - name: Test
+        run: npx turbo run test
+
+      # Build
+      - name: Build
+        run: npx turbo run build
