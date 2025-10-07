@@ -12,6 +12,7 @@
   },
   "devDependencies": {
     "prettier": "^3.6.2",
+    "tsconfig-paths": "^4.2.0",
     "turbo": "^2.5.8",
     "typescript": "5.9.2"
   },
@@ -22,5 +23,10 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "dependencies": {
+    "@nestjs/microservices": "^11.1.6",
+    "nestjs-zod": "^5.0.1",
+    "zod": "^4.1.11"
+  }
 }
