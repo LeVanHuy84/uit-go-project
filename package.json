@@ -25,6 +25,7 @@
     "packages/*"
   ],
   "dependencies": {
+    "@nestjs/config": "^4.0.2",
     "@nestjs/microservices": "^11.1.6",
     "nestjs-zod": "^5.0.1",
     "zod": "^4.1.11"
