@@ -2,7 +2,6 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Injectable } from '@nestjs/common';
 import { DriverQuery, DriverStatus, UpdateLocationDto } from '@repo/shared';
 import type { Redis } from 'ioredis';
-import { success } from 'zod';
 
 @Injectable()
 export class DriverService {

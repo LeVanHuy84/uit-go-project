@@ -19,4 +19,4 @@ async function bootstrap() {
 
   await tcpApp.listen();
 }
-bootstrap();
+void bootstrap();

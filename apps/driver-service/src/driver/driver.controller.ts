@@ -7,7 +7,6 @@ import {
   DriverStatus,
   UpdateLocationDto,
 } from '@repo/shared';
-import { Driver } from 'typeorm';
 
 @Controller('driver')
 export class DriverController {

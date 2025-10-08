@@ -9,4 +9,4 @@ async function bootstrap() {
   await app.listen(process.env.GATEWAY_PORT ?? 4000);
   console.log(`API Gateway is running on: ${await app.getUrl()}`);
 }
-bootstrap();
+void bootstrap();
