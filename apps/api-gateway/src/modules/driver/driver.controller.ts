@@ -15,6 +15,7 @@ import {
   UpdateDriverStatusDto,
   UpdateLocationDto,
 } from '@repo/shared';
+import { Public } from 'src/common/decorators/public.decorator';
 
 @Controller('drivers')
 export class DriverController {
@@ -49,6 +50,7 @@ export class DriverController {
   }
 
   // Hàm để Debug
+  @Public()
   @Get()
   getAllDrivers() {
     return this.client.send('get_all_locations', {});
