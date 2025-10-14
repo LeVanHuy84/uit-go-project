@@ -11,8 +11,8 @@ import { ClientProxy } from '@nestjs/microservices';
 import {
   DRIVER_MESSAGE,
   DriverQuery,
-  DriverStatus,
   SERVICE_NAME,
+  UpdateDriverStatusDto,
   UpdateLocationDto,
 } from '@repo/shared';
 
@@ -36,9 +36,9 @@ export class DriverController {
   @Put(':id/status')
   updateDriverStatus(
     @Param('id') id: string,
-    @Body('status') status: DriverStatus,
+    @Body() data: UpdateDriverStatusDto,
   ) {
-    return this.client.emit(DRIVER_MESSAGE.UPDATE_STATUS, { id, status });
+    return this.client.send(DRIVER_MESSAGE.UPDATE_STATUS, { id, data });
   }
 
   // Hàm để debug

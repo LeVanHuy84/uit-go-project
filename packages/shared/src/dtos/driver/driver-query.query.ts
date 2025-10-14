@@ -1,5 +1,5 @@
-import { Type } from 'class-transformer';
-import { IsNumber } from 'class-validator';
+import { IsEnum, IsNumber, IsOptional } from 'class-validator';
+import { VehicleType } from './enums';
 
 export class DriverQuery {
   @IsNumber({}, { message: 'lat must be a number' })
@@ -7,4 +7,8 @@ export class DriverQuery {
 
   @IsNumber({}, { message: 'lat must be a number' })
   lng: number;
+
+  @IsOptional()
+  @IsEnum(VehicleType)
+  vehicleType?: VehicleType;
 }

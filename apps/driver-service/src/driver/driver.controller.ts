@@ -5,6 +5,7 @@ import {
   DRIVER_MESSAGE,
   DriverQuery,
   DriverStatus,
+  UpdateDriverStatusDto,
   UpdateLocationDto,
 } from '@repo/shared';
 
@@ -20,9 +21,14 @@ export class DriverController {
   }
 
   @MessagePattern(DRIVER_MESSAGE.UPDATE_STATUS)
-  async updateStatus(@Payload() data: { id: string; status: DriverStatus }) {
-    const { id, status } = data;
-    return await this.driverService.updateStatus(id, status);
+  async updateStatus(
+    @Payload() data: { id: string; data: UpdateDriverStatusDto },
+  ) {
+    const {
+      id,
+      data: { status, vehicleType },
+    } = data;
+    return await this.driverService.updateStatus(id, status, vehicleType);
   }
 
   @MessagePattern(DRIVER_MESSAGE.SEARCH_NEARBY)
