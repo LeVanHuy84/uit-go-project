@@ -6,19 +6,15 @@ import path from 'path';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, expandVariables: true }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
+      useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        host: config.get<string>('POSTGRES_HOST'),
-        port: config.get<number>('POSTGRES_PORT'),
-        username: config.get<string>('POSTGRES_USER'),
-        password: config.get<string>('POSTGRES_PASSWORD'),
-        database: config.get<string>('POSTGRES_DB'),
-        entities: [path.join(__dirname, '..', '**', '*.entity.{ts,js}')],
-        synchronize: true, // dev only
+        url: configService.get<string>('DATABASE_URL'),
+        entities: [path.resolve(__dirname, '.') + '/**/*.entity{.js,.ts}'],
+        synchronize: true,
       }),
     }),
     TripModule,
