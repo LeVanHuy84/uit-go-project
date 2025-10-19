@@ -1,5 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
-import { TripStatus } from '@repo/share-dto';
+import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { TripStatus, VehicleType } from '@repo/shared';
 
 @Entity()
 export class Trip {
@@ -12,21 +12,30 @@ export class Trip {
   @Column({ nullable: true })
   driverId: string;
 
-  @Column({
-    type: 'enum',
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    enum: TripStatus,
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-    default: TripStatus.CREATING,
-  })
+  @Column( { type: 'enum', enum: VehicleType, default: VehicleType.MOTORBIKE })
+  vehicleType: VehicleType
+
+  @Column('float')
+  originLat: number;
+
+  @Column('float')
+  originLng: number;
+
+  @Column('float')
+  destinationLat: number;
+
+  @Column('float')
+  destinationLng: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  estimatedFare: number;
+
+  @Column({ type: 'enum', enum: TripStatus, default: TripStatus.SEARCHING })
   status: TripStatus;
 
-  @Column('jsonb', { nullable: true })
-  pickupLocation: any;
-
-  @Column('jsonb', { nullable: true })
-  dropOffLocation: any;
-
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @CreateDateColumn()
   createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

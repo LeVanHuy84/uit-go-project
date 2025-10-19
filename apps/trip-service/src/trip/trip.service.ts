@@ -1,36 +1,111 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Trip } from './entities/trip.entity';
 import { Repository } from 'typeorm';
-import { CreateTripDto, TripResponseDto, TripStatus } from '@repo/share-dto';
+import { Trip } from './entities/trip.entity';
+import { CreateTripDto, TripResponseDto, TripStatus } from '@repo/shared';
 import { plainToInstance } from 'class-transformer';
-
-
 
 @Injectable()
 export class TripService {
   constructor(@InjectRepository(Trip) private repo: Repository<Trip>) {}
-  async createTrip(data: CreateTripDto ) {
+  async create(dto: CreateTripDto): Promise<TripResponseDto> {
+    const estimatedFare = this.calculateEstimatedFare(
+      dto.pickup.lat,
+      dto.pickup.lng,
+      dto.dropOff.lat,
+      dto.dropOff.lng,
+    );
     const trip = this.repo.create({
-  
+      passengerId: dto.passengerId,
+      vehicleType: dto.vehicleType,
+      originLat: dto.pickup.lat,
+      originLng: dto.pickup.lng,
+      destinationLat: dto.dropOff.lat,
+      destinationLng: dto.dropOff.lng,
+      estimatedFare: estimatedFare, 
+      status: TripStatus.SEARCHING,
     });
-    const entity = await this.repo.save(trip);
-    return plainToInstance(TripResponseDto, entity, {});
+    const saved = await this.repo.save(trip);
+
+    return plainToInstance(TripResponseDto, saved);
   }
 
-  async getTrip(id: string): Promise<TripResponseDto> {
+  async findOne(id: string, userId: string): Promise<TripResponseDto> {
     const trip = await this.repo.findOne({ where: { id } });
-    if (!trip) throw new NotFoundException(`Trip ${id} not found`);
-     return plainToInstance(TripResponseDto, trip, {});
+    if (!trip) throw new NotFoundException('Trip not found');
+    if( trip.passengerId !== userId && trip.driverId !== userId)
+      throw new BadRequestException('Unauthorized access trip');
+
+    return plainToInstance(TripResponseDto, trip);
   }
 
-  async cancelTrip(id: string) {
-    const trip = await this.getTrip(id);
-    if ([TripStatus.COMPLETED, TripStatus.CANCELLED].includes(trip.status)) {
-      throw new BadRequestException('Trip cannot be cancelled');
-    }
+  async cancel(id: string, userId: string) {
+    const trip = await this.repo.findOne({ where: { id } });
+    if (!trip) throw new NotFoundException('Trip not found');
+    if (
+      trip.status === TripStatus.CANCELLED ||
+      trip.status === TripStatus.COMPLETED
+    )
+      throw new BadRequestException('Trip already ended');
+
+    // Only passenger or driver can cancel, add logic check if needed
+    if (trip.passengerId !== userId && trip.driverId !== userId)
+      throw new BadRequestException('Unauthorized cancel trip');
     trip.status = TripStatus.CANCELLED;
-    const cancelledTrip = await this.repo.save(trip);
-     return plainToInstance(TripResponseDto, cancelledTrip, {});
+    await this.repo.save(trip);
+    return { message: 'Trip cancelled successfully' };
   }
+
+  async acceptTrip(id: string, driverId: string) {
+    const trip = await this.repo.findOne({ where: { id } });
+    if (!trip) throw new NotFoundException('Trip not found');
+    if (trip.status !== TripStatus.SEARCHING)
+      throw new BadRequestException('Trip not available for accept');
+
+    trip.status = TripStatus.ACCEPTED;
+    trip.driverId = driverId;
+    await this.repo.save(trip);
+    return { message: 'Trip accepted successfully' };
+  }
+
+  async completeTrip(id: string, driverId: string) {
+    const trip = await this.repo.findOne({ where: { id } });
+    if (!trip) throw new NotFoundException('Trip not found');
+    if (trip.status !== TripStatus.ACCEPTED)
+      throw new BadRequestException('Trip not in progress');
+    if (trip.driverId !== driverId)
+      throw new BadRequestException('Unauthorized driver');
+    trip.status = TripStatus.COMPLETED;
+    await this.repo.save(trip);
+    return { message: 'Trip completed successfully' };
+  }
+
+  private calculateEstimatedFare(originLat: number, originLng: number, destinationLat: number, destinationLng: number): number {
+    // Placeholder logic for fare calculation
+    const distance = Math.sqrt(
+      Math.pow(destinationLat - originLat, 2) +
+      Math.pow(destinationLng - originLng, 2)
+    );
+    const baseFare = 10000;
+    const perKmRate = 5000;
+    return baseFare + distance * perKmRate;
+  }
+  private haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371; // Bán kính Trái Đất (km)
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) ** 2;
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
 }
