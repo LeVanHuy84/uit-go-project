@@ -1,7 +1,7 @@
 import { Controller } from '@nestjs/common';
 import { TripService } from './trip.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import { CreateTripDto, TRIP_MESSAGE } from '@repo/shared';
+import { CreateTripDto, CreateTripRatingDto, TRIP_MESSAGE } from '@repo/shared';
 @Controller('trip')
 export class TripController {
   constructor(private readonly tripService: TripService) {}
@@ -28,6 +28,11 @@ export class TripController {
   @MessagePattern(TRIP_MESSAGE.COMPLETE_TRIP)
   completeTrip(@Payload() data: { id: string; driverId: string }) {
     return this.tripService.completeTrip(data.id, data.driverId);
+  }
+
+  @MessagePattern(TRIP_MESSAGE.RATING_TRIP)
+  ratingTrip(@Payload() data: { tripId: string; userId: string; dto: CreateTripRatingDto }) {
+    return this.tripService.ratingTrip(data.tripId, data.userId, data.dto);
   }
 
 

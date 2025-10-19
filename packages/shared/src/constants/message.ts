@@ -11,4 +11,5 @@ export const TRIP_MESSAGE = {
   CANCEL_TRIP: 'cancel-trip',
   ACCEPT_TRIP: 'accept-trip',
   COMPLETE_TRIP: 'complete-trip',
+  RATING_TRIP: 'rating-trip',
 };

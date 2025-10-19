@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Post, Req } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { CreateTripDto, SERVICE_NAME, TRIP_MESSAGE } from '@repo/shared';
 import { Public } from 'src/common/decorators/public.decorator';
@@ -15,7 +15,7 @@ export class TripController {
   ) {}
 
   @Get(':id')
-  getTripById(@Body('id') id: string, @Req() req) {
+  getTripById(@Param('id') id: string, @Req() req) {
     const userId = req.user?.userId;
     return this.tripServiceClient.send(TRIP_MESSAGE.GET_TRIP_BY_ID, { id, userId });
   }
@@ -27,13 +27,13 @@ export class TripController {
   }
 
   @Post(':id/cancel')
-  cancelTrip(@Body('id') id: string, @Req() req) {
+  cancelTrip(@Param('id') id: string, @Req() req) {
     const userId = req.user?.userId;
     return this.tripServiceClient.send(TRIP_MESSAGE.CANCEL_TRIP, { id, userId });
   }
   
   @Post(':id/accept')
-  acceptTrip(@Body('id') id: string, @Req() req) {
+  acceptTrip(@Param('id') id: string, @Req() req) {
     const driverId = req.user?.userId;
     return this.tripServiceClient.send(TRIP_MESSAGE.ACCEPT_TRIP, { id, driverId });
   }
@@ -42,6 +42,12 @@ export class TripController {
   completeTrip(@Body('id') id: string, @Req() req) {
     const driverId = req.user?.userId;
     return this.tripServiceClient.send(TRIP_MESSAGE.COMPLETE_TRIP, { id, driverId });
+  }
+
+  @Post(':id/rating')
+  rateTrip(@Param('id') tripId: string, @Body() dto, @Req() req) {
+    const userId = req.user?.userId;
+    return this.tripServiceClient.send(TRIP_MESSAGE.RATING_TRIP, { tripId, userId, dto });
   }
 
 }
