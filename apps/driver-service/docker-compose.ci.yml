@@ -9,7 +9,7 @@ services:
       - REDIS_HOST=redis
       - RABBIT_URL=amqp://rabbitmq
     ports:
-      - '4002:4002'
+      - '4003:4003'
     depends_on:
       - redis
       - rabbitmq

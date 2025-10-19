@@ -1,0 +1,14 @@
+services:
+  trip-service:
+    build: 
+      context: ../..
+      dockerfile: ./apps/trip-service/Dockerfile
+    image: uitgo/trip-service:${GITHUB_SHA:-latest}
+    container_name: trip-service
+    ports:
+      - "4002:4002"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+    env_file:
+      - .env
