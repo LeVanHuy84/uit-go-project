@@ -71,7 +71,7 @@ export class DriverService {
    */
   async findNearbyDrivers(query: DriverQuery): Promise<DriverResponse[]> {
     const { lat, lng, vehicleType } = query;
-    const desiredCount = 10;
+    const desiredCount = 15;
     const maxRadiusKm = 5;
 
     try {
