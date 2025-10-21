@@ -2,6 +2,7 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Injectable, Logger } from '@nestjs/common';
 import {
   DriverQuery,
+  DriverResponse,
   DriverStatus,
   UpdateLocationDto,
   VehicleType,
@@ -68,17 +69,12 @@ export class DriverService {
    * Tìm tài xế gần theo lat/lng, có thể filter theo vehicleType.
    * Trả về tối đa desiredCount.
    */
-  async findNearbyDrivers(
-    query: DriverQuery,
-  ): Promise<
-    Array<{ id: string; distance: number; lat: number; lng: number }>
-  > {
+  async findNearbyDrivers(query: DriverQuery): Promise<DriverResponse[]> {
     const { lat, lng, vehicleType } = query;
     const desiredCount = 10;
-    const maxRadiusKm = 10;
+    const maxRadiusKm = 5;
 
     try {
-      // 1) Lấy thô từ GEO (overfetch để bù lọc)
       const raw = (await this.redis.geosearch(
         'geo:drivers',
         'FROMLONLAT',
@@ -97,27 +93,17 @@ export class DriverService {
       if (!raw?.length) return [];
 
       const ids = raw.map(([id]) => id);
-
-      // 2) Lấy status cho tất cả bằng MGET (1 round-trip)
       const statusKeys = ids.map((id) => `status:${id}`);
       const statuses = (await this.redis.mget(...statusKeys)) as Array<
         string | null
       >;
 
-      // 3) Lấy vehicleType cho tất cả bằng pipeline (1 round-trip)
       const p = this.redis.pipeline();
       ids.forEach((id) => p.hget(`driver:${id}`, 'vehicleType'));
       const pipelineRes = (await p.exec()) as [Error | null, string | null][];
       const vehicleTypeData = pipelineRes.map(([, res]) => res);
 
-      // 4) Filter và map kết quả
-      const drivers: Array<{
-        id: string;
-        distance: number;
-        lat: number;
-        lng: number;
-        vehicleType: string | null;
-      }> = [];
+      const drivers: DriverResponse[] = [];
 
       raw.forEach(([id, distStr, [lngStr, latStr]], i) => {
         const isOnline = statuses[i] === DriverStatus.ONLINE;
@@ -131,7 +117,7 @@ export class DriverService {
             distance: parseFloat(distStr),
             lat: parseFloat(latStr),
             lng: parseFloat(lngStr),
-            vehicleType: vehicleTypeData[i] ?? null,
+            vehicleType: vehicleTypeData[i] as VehicleType,
           });
         }
       });
@@ -144,15 +130,7 @@ export class DriverService {
   }
 
   // DEBUG: lấy toàn bộ vị trí + trạng thái + vehicleType
-  async getAllLocation(): Promise<
-    Array<{
-      id: string;
-      lat: number;
-      lng: number;
-      status: string | null;
-      vehicleType: string | null;
-    }>
-  > {
+  async getAllLocation(): Promise<DriverResponse[]> {
     try {
       const raw = (await this.redis.geosearch(
         'geo:drivers',
@@ -165,26 +143,24 @@ export class DriverService {
         'WITHCOORD',
       )) as Array<[string, [string, string]]> | null;
 
-      if (!raw || raw.length === 0) return [];
+      if (!raw?.length) return [];
 
       const ids = raw.map(([id]) => id);
-      const statuses = (await this.redis.mget(
-        ...ids.map((id) => `status:${id}`),
-      )) as Array<string | null>;
 
-      // pipeline lấy vehicleType
       const p = this.redis.pipeline();
       ids.forEach((id) => p.hget(`driver:${id}`, 'vehicleType'));
       const pipelineRes = (await p.exec()) as [Error | null, string | null][];
       const vehicleTypes = pipelineRes.map(([, res]) => res);
 
-      return raw.map(([id, [lng, lat]], i) => ({
+      const results: DriverResponse[] = raw.map(([id, [lng, lat]], i) => ({
         id,
+        distance: 0, // không có dữ liệu khoảng cách nên mặc định 0
         lat: parseFloat(lat),
         lng: parseFloat(lng),
-        status: statuses[i] ?? null,
-        vehicleType: vehicleTypes[i] ?? null,
+        vehicleType: vehicleTypes[i] as VehicleType,
       }));
+
+      return results;
     } catch (err) {
       this.logger.error('getAllLocation failed', err as any);
       throw err;
