@@ -63,15 +63,15 @@ Tài liệu này mô tả kiến trúc tổng quan của hệ thống UIT-Go, ph
 ```mermaid
 flowchart LR
   subgraph Clients
-    Passenger[Passenger App]
-    DriverApp[Driver App]
+    Passenger["Passenger App"]
+    DriverApp["Driver App"]
   end
 
   subgraph Services
-    UserSvc[UserService]
-    TripSvc[TripService]
-    DriverSvc[DriverService]
-    Auth[Auth (JWT) - integrated]
+    UserSvc["UserService"]
+    TripSvc["TripService"]
+    DriverSvc["DriverService"]
+    Auth["Auth Service (JWT integrated)"]
   end
 
   Clients -->|auth & api| UserSvc
@@ -80,9 +80,9 @@ flowchart LR
   TripSvc -->|query user| UserSvc
 
   subgraph Infra
-    PostgresUser[(Postgres - users)]
-    PostgresTrip[(Postgres - trips)]
-    Redis[(Redis - geo cache)]
+    PostgresUser["Postgres (users)"]
+    PostgresTrip["Postgres (trips)"]
+    Redis["Redis (geo cache)"]
   end
 
   UserSvc --> PostgresUser
