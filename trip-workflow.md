@@ -4,7 +4,7 @@
 
 **Luồng:**
 
-- Người dùng mở app → bấm “Đặt xe”。
+- Người dùng mở app → bấm “Đặt xe”.
 - Ứng dụng gọi API:
 
 ```http
@@ -37,8 +37,8 @@ POST /trips
 SETNX lock:driver:{driverId} tripId EX 15
 ```
 
-→ Nếu **lock thành công** thì gán tài xế đó。  
-→ Nếu **lock thất bại** thì bỏ qua (tài xế đang bận)。
+→ Nếu **lock thành công** thì gán tài xế đó.  
+→ Nếu **lock thất bại** thì bỏ qua (tài xế đang bận).
 
 **Khi gán được tài xế:**
 - Cập nhật `driver.status = BUSY`
@@ -68,7 +68,7 @@ Trip.driverId = <driverId>
   - Rider: “Đã tìm thấy tài xế”
   - Driver: “Bạn có chuyến mới”
 
-→ Sau đó chờ tài xế **chấp nhận** hoặc **từ chối**。
+→ Sau đó chờ tài xế **chấp nhận** hoặc **từ chối**.
 
 ---
 
@@ -95,7 +95,7 @@ PATCH /driver/trip/{tripId}/accept
 - `driver-service` nhận `updateLocation` định kỳ từ tài xế (2–5 giây/lần)  
   → Cập nhật vào Redis GEO
 
-- `trip-service` nhận broadcast → cập nhật bản đồ real-time cho Rider。
+- `trip-service` nhận broadcast → cập nhật bản đồ real-time cho Rider.
 
 ---
 
@@ -115,7 +115,9 @@ PATCH /driver/trip/{tripId}/accept
 
 ---
 
-## 🧩 Sơ đồ Sequence
+## 🧩 Sơ đồ Sequence (fix cho GitHub Mermaid)
+
+> Lý do lỗi: trong biểu đồ Mermaid gốc mình dùng `break` bên trong `alt` — GitHub Mermaid không cho phép `break` ở vị trí đó. Đã thay bằng `note` để giải thích hành vi (stop iterating) thay vì `break`.
 
 ```mermaid
 sequenceDiagram
@@ -134,7 +136,7 @@ sequenceDiagram
         alt Lock success
             DriverService->>TripService: driver.assigned(driverId)
             DriverService->>Redis: Update driver.status=BUSY
-            break
+            note right of DriverService: Assigned -> stop iterating candidates
         else Lock fail
             DriverService->>DriverService: Skip to next driver
         end
