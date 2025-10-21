@@ -61,33 +61,60 @@ Tài liệu này mô tả kiến trúc tổng quan của hệ thống UIT-Go, ph
 (Include diagram: logical services and infra components)
 
 ```mermaid
-flowchart LR
-  subgraph Clients
-    Passenger["Passenger App"]
-    DriverApp["Driver App"]
+flowchart TD
+  %% =======================
+  %% CLIENT LAYER
+  %% =======================
+  subgraph Clients["Client Apps"]
+    Passenger["Passenger App (Mobile)"]
+    DriverApp["Driver App (Mobile)"]
   end
 
-  subgraph Services
-    UserSvc["UserService"]
-    TripSvc["TripService"]
-    DriverSvc["DriverService"]
-    Auth["Auth Service (JWT integrated)"]
+  %% =======================
+  %% SERVICE LAYER
+  %% =======================
+  subgraph Services["Backend Microservices"]
+    UserSvc["UserService<br/>(đăng ký, hồ sơ tài xế, phương tiện)"]
+    AuthSvc["AuthService<br/>(JWT / Clerk Integration)"]
+    DriverSvc["DriverService<br/>(trạng thái online/offline, vị trí GPS)"]
+    TripSvc["TripService<br/>(tạo, quản lý chuyến, matching)"]
+    NotificationSvc["NotificationService<br/>(gửi yêu cầu & thông báo realtime)"]
+    PaymentSvc["PaymentService<br/>(ghi nhận & tính doanh thu)"]
   end
 
-  Clients -->|auth & api| UserSvc
-  Clients -->|request trip| TripSvc
-  TripSvc -->|search drivers| DriverSvc
-  TripSvc -->|query user| UserSvc
-
-  subgraph Infra
-    PostgresUser["Postgres (users)"]
-    PostgresTrip["Postgres (trips)"]
-    Redis["Redis (geo cache)"]
+  %% =======================
+  %% INFRASTRUCTURE LAYER
+  %% =======================
+  subgraph Infra["Infrastructure"]
+    PostgresUser["Postgres<br/>(users, drivers, vehicles)"]
+    PostgresTrip["Postgres<br/>(trips, trip_status)"]
+    RedisGeo["Redis<br/>(geo cache & driver location)"]
+    MQ["Message Queue / PubSub<br/>(events)"]
   end
 
+  %% =======================
+  %% RELATIONSHIPS
+  %% =======================
+  Passenger -->|Tạo yêu cầu chuyến| TripSvc
+  TripSvc -->|Tìm tài xế gần| DriverSvc
+  DriverSvc --> RedisGeo
+  TripSvc -->|Gửi yêu cầu tới| NotificationSvc
+  NotificationSvc -->|Gửi push notification| DriverApp
+
+  DriverApp -->|Đăng ký & đăng nhập| AuthSvc
+  AuthSvc --> UserSvc
   UserSvc --> PostgresUser
+
+  DriverApp -->|Cập nhật vị trí| DriverSvc
+  DriverSvc --> MQ
+  MQ --> TripSvc
+
+  DriverApp -->|Chấp nhận / từ chối chuyến| TripSvc
+  DriverApp -->|Hoàn thành chuyến| TripSvc
+  TripSvc -->|Ghi nhận doanh thu| PaymentSvc
+  PaymentSvc --> PostgresTrip
+
   TripSvc --> PostgresTrip
-  DriverSvc --> Redis
 ```
 
 ## 4. Thiết kế chi tiết cho bộ xương microservices
