@@ -74,7 +74,7 @@ flowchart TD
   %% SERVICE LAYER
   %% =======================
   subgraph Services["Backend Microservices"]
-    ApiGateway["ApiGateway]
+    ApiGateway["ApiGateway"]
     UserSvc["UserService"]
     DriverSvc["DriverService"]
     TripSvc["TripService"]
