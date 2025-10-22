@@ -6,6 +6,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './modules/auth/auth.module';
 import { JwtAuthGuard } from './modules/auth/jwt-auth.guard';
 import { TripModule } from './modules/trip/trip.module';
+import { UserModule } from './modules/user/user.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { TripModule } from './modules/trip/trip.module';
     DriverModule,
     AuthModule,
     TripModule,
+    UserModule,
   ],
   controllers: [],
   providers: [

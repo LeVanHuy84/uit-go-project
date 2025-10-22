@@ -1,27 +1,25 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { ExtractJwt, Strategy, StrategyOptionsWithRequest } from 'passport-jwt';
-import { ConfigService } from '@nestjs/config';
+import { Strategy, ExtractJwt } from 'passport-jwt';
+import { ClientProxy } from '@nestjs/microservices';
+
+const jwtSecret = process.env.JWT_SECRET || 'changeme_should_be_long_and_random';
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
-  constructor(private configService: ConfigService) {
+export class JwtStrategy extends PassportStrategy(Strategy) {
+  constructor(@Inject('AUTH_SERVICE') private authClient: ClientProxy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService
-        .get<string>('AUTH_JWT_KEY')
-        ?.replace(/\\n/g, '\n'),
-      algorithms: ['HS256'],
-      //passReqToCallback: true,
-    } as StrategyOptionsWithRequest);
+      secretOrKey: jwtSecret,
+    });
   }
 
   async validate(payload: any) {
-    if (!payload || !payload.userId) {
-      throw new UnauthorizedException('Invalid JWT payload');
-    }
-
-    return payload;
+    return { 
+      userId: payload.sub, 
+      email: payload.username, 
+      role: payload.role 
+    };
   }
 }
