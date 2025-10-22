@@ -14,7 +14,7 @@ export class MatchingService {
   private readonly TRIED_TTL = 60 * 5; // 5 minutes
 
   private readonly LOCK_PREFIX = 'lock:driver:'; // lock:driver:{driverId} -> tripId
-  private readonly LOCK_TTL = 30; // seconds
+  private readonly LOCK_TTL = 15; // seconds
 
   private readonly TRIP_BY_DRIVER = 'trip:by-driver:'; // trip:by-driver:{driverId} = tripId
   private readonly TRIP_BY_DRIVER_TTL = 45; // seconds (shorter but > LOCK_TTL)
@@ -176,6 +176,14 @@ export class MatchingService {
       return { success: false };
     }
 
+    const raw = await this.redis.get(`${this.TRIP_META}${tripId}`);
+    if (!raw) {
+      this.logger.warn(`No trip meta found for ${tripId}`);
+      return;
+    }
+    const trip = JSON.parse(raw) as TripMatchingRequest;
+    const { passengerId } = trip;
+
     await this.redis.del(lockKey);
     await this.redis.del(`${this.TRIP_BY_DRIVER}${driverId}`);
     await this.redis.del(`${this.TRIED_PREFIX}${tripId}`);
@@ -184,6 +192,11 @@ export class MatchingService {
     this.channel.publish('driver.events', 'driver.accepted', {
       tripId,
       driverId,
+    });
+    await this.publishNotification('driver.accepted', {
+      tripId,
+      driverId,
+      passengerId,
     });
     this.logger.log(`Driver ${driverId} accepted trip ${tripId}`);
     return { success: true };
