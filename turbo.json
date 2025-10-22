@@ -24,6 +24,10 @@
     },
     "start:dev": {
       "dependsOn": ["^dev"]
+    },
+    "prisma:generate": {
+      "dependsOn": [],
+      "outputs": []
     }
   }
 }
