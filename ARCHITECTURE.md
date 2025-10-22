@@ -61,29 +61,29 @@ Tài liệu này mô tả kiến trúc tổng quan của hệ thống UIT-Go, ph
 (Include diagram: logical services and infra components)
 
 ```mermaid
-flowchart LR
+flowchart TD
   %% CLIENT LAYER
-  subgraph Clients["Client Apps"]
-    Passenger["Passenger App (Mobile)"]
-    DriverApp["Driver App (Mobile)"]
+  subgraph Clients["🧑‍💻 Client Apps"]
+    Passenger["📱 Passenger App (Mobile)"]
+    DriverApp["🚗 Driver App (Mobile)"]
   end
 
   %% SERVICE LAYER
-  subgraph Services["Backend Microservices"]
-    ApiGateway["ApiGateway"]
-    UserSvc["UserService"]
-    TripSvc["TripService"]
-    DriverSvc["DriverService"]
-    NotificationSvc["NotificationService"]
-    PaymentSvc["PaymentService"]
+  subgraph Services["⚙️ Backend Microservices"]
+    ApiGateway["🌐 ApiGateway"]
+    UserSvc["👤 UserService"]
+    TripSvc["🗺️ TripService"]
+    DriverSvc["🚘 DriverService"]
+    NotificationSvc["🔔 NotificationService"]
+    PaymentSvc["💰 PaymentService"]
   end
 
   %% INFRASTRUCTURE
-  subgraph Infra["Infrastructure"]
-    PostgresUser["Postgres<br/>(users, drivers, vehicles)"]
-    PostgresTrip["Postgres<br/>(trips, trip_status, rating)"]
-    RedisGeo["Redis<br/>(geo cache & driver location)"]
-    MQ["RabbitMQ Pub/Sub"]
+  subgraph Infra["🧱 Infrastructure"]
+    PostgresUser["🗄️ Postgres<br/>(users, drivers, vehicles)"]
+    PostgresTrip["🗄️ Postgres<br/>(trips, trip_status, rating)"]
+    RedisGeo["⚡ Redis<br/>(geo cache & driver location)"]
+    MQ["📨 RabbitMQ Pub/Sub"]
   end
 
   %% RELATIONS
@@ -109,6 +109,13 @@ flowchart LR
   PaymentSvc --> PostgresTrip
 
   TripSvc --> PostgresTrip
+
+  %% ALIGNMENT HINTS
+  Clients:::top --> Services:::middle --> Infra:::bottom
+
+  classDef top fill:#e3f2fd,stroke:#90caf9,stroke-width:2px;
+  classDef middle fill:#f1f8e9,stroke:#aed581,stroke-width:2px;
+  classDef bottom fill:#fff3e0,stroke:#ffb74d,stroke-width:2px;
 
 ```
 
