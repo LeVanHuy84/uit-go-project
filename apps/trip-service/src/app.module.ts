@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TripModule } from './trip/trip.module';
 import path from 'path';
+import { RabbitmqModule } from '@repo/shared';
 
 @Module({
   imports: [
@@ -16,6 +17,13 @@ import path from 'path';
         entities: [path.resolve(__dirname, '.') + '/**/*.entity{.js,.ts}'],
         synchronize: true,
       }),
+    }),
+    RabbitmqModule.register({
+      urls: ['amqp://guest:guest@localhost:5672'],
+      exchanges: [
+        { name: 'trip.events', type: 'topic' },
+        { name: 'driver.events', type: 'topic' },
+      ],
     }),
     TripModule,
   ],
