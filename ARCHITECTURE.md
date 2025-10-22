@@ -61,30 +61,24 @@ Tài liệu này mô tả kiến trúc tổng quan của hệ thống UIT-Go, ph
 (Include diagram: logical services and infra components)
 
 ```mermaid
-flowchart TD
-  %% =======================
+flowchart LR
   %% CLIENT LAYER
-  %% =======================
   subgraph Clients["Client Apps"]
     Passenger["Passenger App (Mobile)"]
     DriverApp["Driver App (Mobile)"]
   end
 
-  %% =======================
   %% SERVICE LAYER
-  %% =======================
   subgraph Services["Backend Microservices"]
     ApiGateway["ApiGateway"]
     UserSvc["UserService"]
-    DriverSvc["DriverService"]
     TripSvc["TripService"]
+    DriverSvc["DriverService"]
     NotificationSvc["NotificationService"]
     PaymentSvc["PaymentService"]
   end
 
-  %% =======================
-  %% INFRASTRUCTURE LAYER
-  %% =======================
+  %% INFRASTRUCTURE
   subgraph Infra["Infrastructure"]
     PostgresUser["Postgres<br/>(users, drivers, vehicles)"]
     PostgresTrip["Postgres<br/>(trips, trip_status, rating)"]
@@ -92,9 +86,7 @@ flowchart TD
     MQ["RabbitMQ Pub/Sub"]
   end
 
-  %% =======================
-  %% RELATIONSHIPS
-  %% =======================
+  %% RELATIONS
   Passenger --> ApiGateway
   DriverApp --> ApiGateway
 
@@ -109,7 +101,7 @@ flowchart TD
 
   DriverSvc --> RedisGeo
   DriverSvc --> NotificationSvc
-  NotificationSvc -->|Gửi push notification| DriverApp
+  NotificationSvc -->|Push notification| DriverApp
 
   UserSvc --> PostgresUser
 
@@ -117,6 +109,7 @@ flowchart TD
   PaymentSvc --> PostgresTrip
 
   TripSvc --> PostgresTrip
+
 ```
 
 ## 4. Thiết kế chi tiết cho bộ xương Microservices
