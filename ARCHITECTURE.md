@@ -123,6 +123,7 @@ flowchart LR
 - Đăng ký và đăng nhập người dùng (JWT Authentication).
 - Quản lý hồ sơ cá nhân, phân biệt loại tài khoản: *passenger* và *driver*.
 - Cung cấp dữ liệu người dùng cho các service khác (TripService, DriverService) thông qua REST API hoặc event bus.
+- Rating trip.
 
 **Cơ sở dữ liệu:**
 - **PostgreSQL**
@@ -148,8 +149,8 @@ flowchart LR
 
 **Cơ sở dữ liệu:**
 - **PostgreSQL**
-  - `trips`: thông tin chuyến đi (id, passenger_id, driver_id, origin, destination, status, fare, created_at)
-  - `trip_events`: lịch sử event trạng thái (trip_id, type, metadata, created_at)
+  - `trips`: thông tin chuyến đi (id, passenger_id, driver_id, vehicle_type, origin_lat, origin_lng, destination_lat, destination_lng, estimated_fare, status, created_at, updated_at)
+  - `trip_ratings`: đánh giá chuyến đi (id, trip_id, driver_id, passenger_id, rating, feedback, created_at)
 
 **State Machine:**
 SEARCHING → ACCEPTED → ENROUTE_TO_PICKUP → IN_PROGRESS → COMPLETED / CANCELLED
@@ -189,11 +190,6 @@ SEARCHING → ACCEPTED → ENROUTE_TO_PICKUP → IN_PROGRESS → COMPLETED / CAN
 | `GET /drivers/search?lat=&lng=&radius=` | Tìm kiếm tài xế gần vị trí chỉ định (debug hoặc nội bộ TripService gọi) |
 | `POST /drivers/reject` | Tài xế từ chối chuyến đi (`driver_reject_trip`) |
 | `POST /drivers/accept` | Tài xế chấp nhận chuyến đi (`driver_accept_trip`) |
-
-**Event Handling:**
-- Lắng nghe: `trip.find_driver`
-- Phát: `driver.found_list`
-
 
 
 ## 5. Giao tiếp giữa các service (Sequence Flows)
