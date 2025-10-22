@@ -6,6 +6,7 @@ import {
   Query,
   Body,
   Param,
+  Post,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
@@ -17,7 +18,10 @@ import {
 } from '@repo/shared';
 import { Public } from 'src/common/decorators/public.decorator';
 
-@Controller('drivers')
+@Controller({
+  version: '1',
+  path: 'drivers',
+})
 export class DriverController {
   constructor(
     @Inject(SERVICE_NAME.DRIVER_SERVICE)
@@ -54,5 +58,15 @@ export class DriverController {
   @Get()
   getAllDrivers() {
     return this.client.send('get_all_locations', {});
+  }
+
+  @Post('reject')
+  rejectTrip(@Body() body: { driverId: string; tripId: string }) {
+    return this.client.send('driver_reject_trip', body);
+  }
+
+  @Post('accept')
+  acceptTrip(@Body() body: { driverId: string; tripId: string }) {
+    return this.client.send('driver_accept_trip', body);
   }
 }
