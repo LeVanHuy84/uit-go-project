@@ -50,8 +50,8 @@ Tài liệu này mô tả kiến trúc tổng quan của hệ thống UIT-Go, ph
 * Trạng thái hiện tại (phiên bản đầu tiên nộp):
 
   * Docker Compose chạy được gồm 3 service: `user-service`, `trip-service`, `driver-service`.
-  * Mỗi service có DB riêng (postgres trong compose cho User/Trip, mongo hoặc postgres cho Driver tùy cài đặt).
-  * Triển lãm giao tiếp: `UserService` có thể gọi `TripService` (ví dụ: tạo trip), `TripService` gọi `DriverService` để tìm tài xế gần.
+  * Mỗi service có DB riêng (postgres trong compose cho User/Trip, redis geo cache cho Driver).
+  * Triển lãm giao tiếp: User có thể gọi `TripService` (ví dụ: tạo trip), `TripService` gọi `DriverService` để tìm tài xế gần.
   * File `docker-compose.yml`, scripts start/stop, và sample curl commands đã sẵn sàng trong repo.
 
 > Ghi chú: chi tiết cấu hình, lệnh chạy và API examples nằm trong phần "Triển khai local" và "API gợi ý".
@@ -74,12 +74,12 @@ flowchart TD
   %% SERVICE LAYER
   %% =======================
   subgraph Services["Backend Microservices"]
-    UserSvc["UserService<br/>(đăng ký, hồ sơ tài xế, phương tiện)"]
-    AuthSvc["AuthService<br/>(JWT / Clerk Integration)"]
-    DriverSvc["DriverService<br/>(trạng thái online/offline, vị trí GPS)"]
-    TripSvc["TripService<br/>(tạo, quản lý chuyến, matching)"]
-    NotificationSvc["NotificationService<br/>(gửi yêu cầu & thông báo realtime)"]
-    PaymentSvc["PaymentService<br/>(ghi nhận & tính doanh thu)"]
+    ApiGateway["ApiGateway]
+    UserSvc["UserService"]
+    DriverSvc["DriverService"]
+    TripSvc["TripService"]
+    NotificationSvc["NotificationService"]
+    PaymentSvc["PaymentService"]
   end
 
   %% =======================
@@ -87,65 +87,155 @@ flowchart TD
   %% =======================
   subgraph Infra["Infrastructure"]
     PostgresUser["Postgres<br/>(users, drivers, vehicles)"]
-    PostgresTrip["Postgres<br/>(trips, trip_status)"]
+    PostgresTrip["Postgres<br/>(trips, trip_status, rating)"]
     RedisGeo["Redis<br/>(geo cache & driver location)"]
-    MQ["Message Queue / PubSub<br/>(events)"]
+    MQ["RabbitMQ Pub/Sub"]
   end
 
   %% =======================
   %% RELATIONSHIPS
   %% =======================
-  Passenger -->|Tạo yêu cầu chuyến| TripSvc
-  TripSvc -->|Tìm tài xế gần| DriverSvc
+  Passenger --> ApiGateway
+  DriverApp --> ApiGateway
+
+  ApiGateway --> UserSvc
+  ApiGateway --> TripSvc
+  ApiGateway --> DriverSvc
+
+  TripSvc -->|Tìm tài xế gần| MQ
+  MQ --> |Tìm chuyến| DriverSvc
+  DriverSvc --> |Cập nhật trip status| MQ
+  MQ --> |Trip status| TripSvc
+
   DriverSvc --> RedisGeo
-  TripSvc -->|Gửi yêu cầu tới| NotificationSvc
+  DriverSvc --> NotificationSvc
   NotificationSvc -->|Gửi push notification| DriverApp
 
-  DriverApp -->|Đăng ký & đăng nhập| AuthSvc
-  AuthSvc --> UserSvc
   UserSvc --> PostgresUser
 
-  DriverApp -->|Cập nhật vị trí| DriverSvc
-  DriverSvc --> MQ
-  MQ --> TripSvc
-
-  DriverApp -->|Chấp nhận / từ chối chuyến| TripSvc
-  DriverApp -->|Hoàn thành chuyến| TripSvc
   TripSvc -->|Ghi nhận doanh thu| PaymentSvc
   PaymentSvc --> PostgresTrip
 
   TripSvc --> PostgresTrip
 ```
 
-## 4. Thiết kế chi tiết cho bộ xương microservices
+## 4. Thiết kế chi tiết cho bộ xương Microservices
 
-### UserService
+### **UserService**
 
-* Chức năng: đăng ký, đăng nhập (JWT), quản lý hồ sơ người dùng (passenger/driver flag).
-* DB: PostgreSQL (schema: users, drivers_profile)
-* API cơ bản: `POST /users`, `POST /sessions`, `GET /users/me`
+**Chức năng chính:**
+- Đăng ký và đăng nhập người dùng (JWT Authentication).
+- Quản lý hồ sơ cá nhân, phân biệt loại tài khoản: *passenger* và *driver*.
+- Cung cấp dữ liệu người dùng cho các service khác (TripService, DriverService) thông qua REST API hoặc event bus.
 
-### TripService
+**Cơ sở dữ liệu:**
+- **PostgreSQL**
+  - `users`: lưu thông tin cơ bản (id, name, email, password_hash, role, created_at)
+  - `drivers_profile`: lưu thông tin bổ sung của tài xế (vehicle_type, license_number, rating, status)
 
-* Chức năng: tạo trip, quản lý trạng thái, lưu lịch sử trip, tạm thời chứa logic matching (nhưng gọi DriverService để lấy candidate list).
-* DB: PostgreSQL (trips, trip_events)
-* State machine: `REQUESTED` -> `FINDING_DRIVER` -> `DRIVER_ASSIGNED` -> `ONGOING` -> `COMPLETED`/`CANCELLED`
+**API chính:**
+| Method | Endpoint | Mô tả |
+|--------|-----------|-------|
+| `POST /users` | Tạo tài khoản mới |
+| `POST /sessions` | Đăng nhập, trả về JWT |
+| `GET /users/me` | Lấy thông tin người dùng hiện tại |
 
-### DriverService
+---
 
-* Chức năng: quản lý profile tài xế, trạng thái online/offline, cập nhật vị trí realtime (endpoint PUT /drivers/{id}/location), tìm kiếm tài xế gần.
-* Data store: Redis (geo) trong Compose để demo speed-first; cung cấp interface để chuyển sang DynamoDB+Geohash ở prod.
+### **TripService**
 
-## 5. Giao tiếp giữa các service (sequence flows)
+**Chức năng chính:**
+- Tạo và quản lý chuyến đi (`Trip`), cập nhật trạng thái theo state machine.
+- Ghi nhận event (trip_events) để phục vụ tracking và audit log.
+- Tạm thời chứa logic *matching driver* (nhưng thực hiện truy vấn danh sách tài xế qua `DriverService`).
+- Phát và lắng nghe sự kiện trên RabbitMQ để giao tiếp phi đồng bộ với `DriverService`.
 
-### Tạo chuyến (high-level)
+**Cơ sở dữ liệu:**
+- **PostgreSQL**
+  - `trips`: thông tin chuyến đi (id, passenger_id, driver_id, origin, destination, status, fare, created_at)
+  - `trip_events`: lịch sử event trạng thái (trip_id, type, metadata, created_at)
 
-1. Passenger gọi `POST /trips` tới TripService.
-2. TripService lưu bản ghi tạm (`REQUESTED` -> `FINDING_DRIVER`).
-3. TripService gọi `GET /drivers/search?lat=...&lng=...` trên DriverService.
-4. DriverService trả về danh sách tài xế gần nhất.
-5. TripService chọn 1 candidate, cập nhật trip (`DRIVER_ASSIGNED`) và gọi `POST /drivers/{id}/notifications` (mô phỏng) hoặc publish event.
-6. Driver chấp nhận -> TripService cập nhật trạng thái `ONGOING`.
+**State Machine:**
+SEARCHING → ACCEPTED → ENROUTE_TO_PICKUP → IN_PROGRESS → COMPLETED / CANCELLED
+
+
+**API chính:**
+| Method | Endpoint | Mô tả |
+|--------|-----------|-------|
+| `GET /trips/:id` | Lấy thông tin chi tiết chuyến đi (yêu cầu userId trong JWT) |
+| `POST /trips` | Tạo chuyến đi mới (public, sử dụng `CreateTripDto`) |
+| `POST /trips/:id/cancel` | Hành khách hủy chuyến |
+| `POST /trips/:id/accept` | Tài xế nhận chuyến |
+| `POST /trips/:id/complete` | Tài xế hoàn tất chuyến đi |
+| `POST /trips/:id/rating` | Hành khách đánh giá chuyến đi |
+
+---
+
+### **DriverService**
+
+**Chức năng chính:**
+- Quản lý thông tin và trạng thái hoạt động của tài xế.
+- Cập nhật vị trí tài xế theo thời gian thực (Geo location update).
+- Tìm kiếm tài xế gần điểm đón thông qua Redis Geo API.
+- Giao tiếp với `TripService` qua RabbitMQ để phản hồi danh sách tài xế tiềm năng.
+
+**Data Store:**
+- **Redis (Geo index)**: lưu vị trí tài xế theo `driver:{id} → (longitude, latitude)`
+- Mô phỏng tốc độ tìm kiếm thời gian thực cho bản demo.
+- Lock tài xế với TTL 15s cho tài xế 15s quyết định nhận chuyến.
+- Dễ dàng thay thế sang DynamoDB + Geohash trong môi trường production.
+
+**API chính:**
+| Method | Endpoint | Mô tả |
+|--------|-----------|-------|
+| `PUT /drivers/:id/location` | Cập nhật vị trí GPS của tài xế (emit event `DRIVER_MESSAGE.UPDATE_LOCATION`) |
+| `PUT /drivers/:id/status` | Cập nhật trạng thái hoạt động (online/offline + loại xe) |
+| `GET /drivers/search?lat=&lng=&radius=` | Tìm kiếm tài xế gần vị trí chỉ định (debug hoặc nội bộ TripService gọi) |
+| `POST /drivers/reject` | Tài xế từ chối chuyến đi (`driver_reject_trip`) |
+| `POST /drivers/accept` | Tài xế chấp nhận chuyến đi (`driver_accept_trip`) |
+
+**Event Handling:**
+- Lắng nghe: `trip.find_driver`
+- Phát: `driver.found_list`
+
+
+
+## 5. Giao tiếp giữa các service (Sequence Flows)
+
+### Luồng tạo chuyến (High-level)
+
+1. **Passenger** gọi `POST /trips` tới **TripService**.
+2. **TripService** tạo bản ghi chuyến đi trong cơ sở dữ liệu với trạng thái ban đầu `SEARCHING`.
+3. **TripService** publish event **`trip.requested`** lên RabbitMQ, chứa thông tin vị trí đón và loại xe.
+4. **DriverService** lắng nghe event **`trip.requested`**, truy vấn Redis Geo index để tìm danh sách tài xế gần nhất.
+5. **DriverService** chọn tài xế gần nhất, **lock** tài xế đó và đưa vào danh sách tài xế đã được request.  
+   Sau đó gửi **notification** cho tài xế để chọn *Chấp nhận* hoặc *Từ chối* chuyến đi.
+
+   **5.1. Trường hợp tài xế từ chối hoặc không phản hồi sau 15 giây:**
+   - **DriverService** retry với tài xế khác.  
+     Nếu vượt quá `MAX_RETRY`:
+     - Publish event **`driver.timeout`**.
+     - Push notification **`trip.failed`** cho Passenger.
+   - **TripService** lắng nghe event **`driver.timeout`**, cập nhật trạng thái chuyến đi thành `CANCELLED`.
+
+   **5.2. Trường hợp tài xế chấp nhận chuyến:**
+   - **DriverService** gửi event **`driver.accepted`** và push notification cho Passenger.
+   - **TripService** lắng nghe event **`driver.accepted`**, cập nhật trạng thái chuyến đi thành `ACCEPTED`.
+
+   **5.3. Trường hợp hành khách hủy chuyến khi vẫn đang tìm tài xế (`SEARCHING`):**
+   - **TripService** publish event **`trip.cancel`**.
+   - **DriverService** lắng nghe event **`trip.cancel`**, dừng quy trình tìm kiếm tài xế và xóa cache.
+
+---
+
+### Luồng di chuyển & hoàn thành chuyến
+
+10. Khi tài xế bắt đầu di chuyển tới điểm đón, **TripService** cập nhật trạng thái `ENROUTE_TO_PICKUP`.  
+11. Khi hành khách lên xe, trạng thái chuyển sang `IN_PROGRESS`.  
+12. Khi tài xế hoàn tất chuyến đi, **TripService** cập nhật trạng thái `COMPLETED`.  
+13. Nếu hành khách hoặc tài xế hủy chuyến, trạng thái sẽ được cập nhật thành `CANCELLED`.
+
+---
 
 ## 6. Triển khai local (Docker Compose)
 
