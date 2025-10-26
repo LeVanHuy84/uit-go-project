@@ -1,8 +1,13 @@
 import { Injectable, Inject, OnModuleInit, Logger } from '@nestjs/common';
-import { TripMatchingRequest, TripResponseDto } from '@repo/shared';
+import {
+  DriverStatus,
+  TripMatchingRequest,
+  TripResponseDto,
+} from '@repo/shared';
 import type { ChannelWrapper } from 'amqp-connection-manager';
 import * as amqp from 'amqplib';
 import { MatchingService } from './matching.service';
+import { DriverService } from 'src/driver/driver.service';
 
 @Injectable()
 export class DriverConsumer implements OnModuleInit {
@@ -11,23 +16,37 @@ export class DriverConsumer implements OnModuleInit {
   constructor(
     @Inject('RABBITMQ_CHANNEL') private readonly channel: ChannelWrapper,
     private readonly matchingService: MatchingService,
+    private readonly driverService: DriverService,
   ) {}
 
   async onModuleInit() {
     await this.channel.addSetup(async (ch: amqp.Channel) => {
       await ch.consume('trip.events_queue', (msg) => {
         if (!msg) return;
-        const content = JSON.parse(
-          msg.content.toString(),
-        ) as TripMatchingRequest;
         const routingKey = msg.fields.routingKey;
 
-        if (routingKey === 'trip.requested') {
-          this.matchingService.handleTripRequested(content);
-        }
+        try {
+          if (routingKey === 'trip.requested') {
+            const content = JSON.parse(
+              msg.content.toString(),
+            ) as TripMatchingRequest;
+            this.matchingService.handleTripRequested(content);
+          }
 
-        if (routingKey === 'trip.cancel') {
-          this.matchingService.handleTripCancelled(content.id);
+          if (routingKey === 'trip.cancel') {
+            const content = JSON.parse(
+              msg.content.toString(),
+            ) as TripMatchingRequest;
+            this.matchingService.handleTripCancelled(content.id);
+          }
+
+          if (routingKey === 'trip.completed') {
+            // trip-service publish driverId (string)
+            const driverId = msg.content.toString();
+            this.driverService.updateStatus(driverId, DriverStatus.ONLINE);
+          }
+        } catch (err) {
+          console.error('Error handling message:', routingKey, err);
         }
 
         ch.ack(msg);

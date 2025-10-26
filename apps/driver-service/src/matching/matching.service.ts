@@ -2,9 +2,10 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 import type { ChannelWrapper } from 'amqp-connection-manager';
-import { DriverQuery, TripMatchingRequest } from '@repo/shared';
+import { DriverQuery, DriverStatus, TripMatchingRequest } from '@repo/shared';
 
 import { DriverLockService } from './driver-lock.service';
+import { DriverService } from 'src/driver/driver.service';
 
 @Injectable()
 export class MatchingService {
@@ -29,6 +30,7 @@ export class MatchingService {
     @InjectRedis() private readonly redis: Redis,
     @Inject('RABBITMQ_CHANNEL') private readonly channel: ChannelWrapper,
     private readonly driverLockService: DriverLockService,
+    private readonly driverService: DriverService,
   ) {}
 
   /**
@@ -188,6 +190,9 @@ export class MatchingService {
     await this.redis.del(`${this.TRIP_BY_DRIVER}${driverId}`);
     await this.redis.del(`${this.TRIED_PREFIX}${tripId}`);
     await this.redis.del(`${this.TRIP_META}${tripId}`);
+
+    // ✅ Đổi status tài xế thành BUSY (tránh match chuyến khác)
+    await this.driverService.updateStatus(driverId, DriverStatus.BUSY);
 
     this.channel.publish('driver.events', 'driver.accepted', {
       tripId,

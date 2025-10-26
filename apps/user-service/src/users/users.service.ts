@@ -1,15 +1,22 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { UserRole } from '@prisma/client';
 import { PrismaService } from 'prisma/prisma.service';
-import { CreateUserDto } from '@repo/shared';
+import { CreateDriverProfileDto, CreateUserDto } from '@repo/shared';
 
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateUserDto) {
-    const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    const existing = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
     if (existing) throw new ConflictException('Email already in use');
 
     const hashed = await bcrypt.hash(dto.password, 10);
@@ -42,5 +49,36 @@ export class UsersService {
   async updateProfile(id: string, payload: Partial<any>) {
     await this.prisma.user.update({ where: { id }, data: payload });
     return this.findById(id);
+  }
+
+  async registerDriverProfile(userId: string, dto: CreateDriverProfileDto) {
+    // 1. Kiểm tra user có tồn tại không
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    // 2. Kiểm tra đã có driver profile chưa
+    const existing = await this.prisma.driverProfile.findUnique({
+      where: { userId },
+    });
+    if (existing) {
+      throw new BadRequestException('Driver profile already exists');
+    }
+
+    // 3. Tạo mới driver profile
+    const profile = await this.prisma.driverProfile.create({
+      data: {
+        userId,
+        licenseNumber: dto.licenseNumber,
+        vehicleType: dto.vehicleType,
+        vehicleBrand: dto.vehicleBrand,
+        vehicleModel: dto.vehicleModel,
+        licensePlate: dto.licensePlate,
+      },
+      include: { user: true },
+    });
+
+    return profile;
   }
 }
