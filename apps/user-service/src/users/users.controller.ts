@@ -1,7 +1,20 @@
-import { Controller, Post, Body, Get, UseGuards, Req, Put } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  UseGuards,
+  Req,
+  Put,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import { USER_MESSAGE, CreateUserDto, UpdateUserDto } from '@repo/shared';
+import {
+  USER_MESSAGE,
+  CreateUserDto,
+  UpdateUserDto,
+  CreateDriverProfileDto,
+} from '@repo/shared';
 
 @Controller()
 export class UsersController {
@@ -25,5 +38,12 @@ export class UsersController {
   @MessagePattern(USER_MESSAGE.UPDATE_USER)
   async updateUser(@Payload() data: { id: string; dto: UpdateUserDto }) {
     return this.usersService.updateProfile(data.id, data.dto);
+  }
+
+  @MessagePattern(USER_MESSAGE.REGISTER_DRIVER_PROFILE)
+  async registerDriverProfile(
+    @Payload() data: { userId: string; dto: CreateDriverProfileDto },
+  ) {
+    return this.usersService.registerDriverProfile(data.userId, data.dto);
   }
 }

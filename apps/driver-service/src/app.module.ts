@@ -33,7 +33,7 @@ import { MatchingModule } from './matching/matching.module';
       exchanges: [
         { name: 'trip.events', type: 'topic' },
         { name: 'driver.events', type: 'topic' },
-        { name: 'notification', type: 'fanout' },
+        { name: 'notification', type: 'topic' },
       ],
     }),
     DriverModule,

@@ -12,6 +12,12 @@ enum UserRole {
   driver
 }
 
+enum VehicleType {
+  MOTORBIKE
+  CAR_4_SEATS
+  CAR_7_SEATS
+}
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -19,6 +25,20 @@ model User {
   password  String
   role      UserRole @default(passenger)
   phone     String?
+  driverProfile DriverProfile?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model DriverProfile {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id])
+  licenseNumber String   // Số bằng lái
+  vehicleType   VehicleType   // Loại xe (car, motorbike,...)
+  vehicleBrand  String   // Hãng xe
+  vehicleModel  String   // Dòng xe
+  licensePlate  String   // Biển số
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }

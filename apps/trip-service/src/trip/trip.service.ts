@@ -108,6 +108,10 @@ export class TripService {
       throw new BadRequestException('Unauthorized driver');
     trip.status = TripStatus.COMPLETED;
     await this.tripRepo.save(trip);
+
+    // Publish sự kiện trip.completed
+    await this.channel.publish('trip.events', 'trip.completed', trip.driverId);
+
     return { message: 'Trip completed successfully' };
   }
 
