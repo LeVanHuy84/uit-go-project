@@ -7,13 +7,16 @@ import { RabbitmqModule } from '@repo/shared';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, expandVariables: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      expandVariables: true,
+    }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        url: configService.get<string>('DATABASE_URL'),
+        url: configService.get<string>('TRIP_DATABASE_URL'),
         entities: [path.resolve(__dirname, '.') + '/**/*.entity{.js,.ts}'],
         synchronize: true,
       }),
