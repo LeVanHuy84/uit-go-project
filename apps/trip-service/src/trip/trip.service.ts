@@ -37,8 +37,13 @@ export class TripService {
     });
     const saved = await this.tripRepo.save(trip);
 
+
+
     return plainToInstance(TripResponseDto, saved);
   }
+
+  
+  
 
   async findOne(id: string, userId: string): Promise<TripResponseDto> {
     const trip = await this.tripRepo.findOne({ where: { id } });

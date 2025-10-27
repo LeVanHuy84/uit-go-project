@@ -15,6 +15,9 @@ import path from 'path';
         url: configService.get<string>('DATABASE_URL'),
         entities: [path.resolve(__dirname, '.') + '/**/*.entity{.js,.ts}'],
         synchronize: true,
+        ssl: {
+          rejectUnauthorized: false,
+        }
       }),
     }),
     TripModule,
