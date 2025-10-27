@@ -3,3 +3,13 @@ services:
     image: redis:7
     ports:
       - '6379:6379'
+    command: ['redis-server', '--notify-keyspace-events', 'Ex']
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq-1
+    ports:
+      - '5672:5672' # AMQP connection
+      - '15672:15672' # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest

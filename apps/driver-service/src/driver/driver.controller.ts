@@ -4,7 +4,6 @@ import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
 import {
   DRIVER_MESSAGE,
   DriverQuery,
-  DriverStatus,
   UpdateDriverStatusDto,
   UpdateLocationDto,
 } from '@repo/shared';

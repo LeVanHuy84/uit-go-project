@@ -8,9 +8,11 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
-    "test": "turbo run test"
+    "test": "turbo run test",
+    "prisma:generate": "turbo run prisma:generate"
   },
   "devDependencies": {
+    "@types/amqplib": "^0.10.7",
     "prettier": "^3.6.2",
     "tsconfig-paths": "^4.2.0",
     "turbo": "^2.5.8",
@@ -27,6 +29,8 @@
   "dependencies": {
     "@nestjs/config": "^4.0.2",
     "@nestjs/microservices": "^11.1.6",
+    "amqp-connection-manager": "^5.0.0",
+    "amqplib": "^0.10.9",
     "nestjs-zod": "^5.0.1",
     "zod": "^4.1.11"
   }

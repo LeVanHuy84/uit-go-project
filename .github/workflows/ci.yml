@@ -27,6 +27,9 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
+      - name: generate prisma
+        run: npm run prisma:generate
+
       # Build shared package trước
       - name: Build shared package
         run: npx turbo run build --filter=@repo/shared

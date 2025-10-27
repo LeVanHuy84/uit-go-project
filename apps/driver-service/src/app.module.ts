@@ -2,21 +2,23 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
-import dbConfig from './config/db.config';
+// import dbConfig from './config/db.config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DriverModule } from './driver/driver.module';
 import { RedisModule } from '@nestjs-modules/ioredis';
+import { RabbitmqModule } from '@repo/shared';
+import { MatchingModule } from './matching/matching.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       expandVariables: true,
-      load: [dbConfig],
+      // load: [dbConfig],
     }),
-    TypeOrmModule.forRootAsync({
-      useFactory: dbConfig,
-    }),
+    // TypeOrmModule.forRootAsync({
+    //   useFactory: dbConfig,
+    // }),
     RedisModule.forRoot({
       type: 'single',
       options: {
@@ -26,7 +28,16 @@ import { RedisModule } from '@nestjs-modules/ioredis';
           : 6379,
       },
     }),
+    RabbitmqModule.register({
+      urls: ['amqp://guest:guest@localhost:5672'],
+      exchanges: [
+        { name: 'trip.events', type: 'topic' },
+        { name: 'driver.events', type: 'topic' },
+        { name: 'notification', type: 'topic' },
+      ],
+    }),
     DriverModule,
+    MatchingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

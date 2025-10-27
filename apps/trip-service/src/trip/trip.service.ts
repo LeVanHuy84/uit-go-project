@@ -1,14 +1,23 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Trip } from './entities/trip.entity';
-import { CreateTripDto, CreateTripRatingDto, TripRatingResponseDto, TripResponseDto, TripStatus } from '@repo/shared';
+import {
+  CreateTripDto,
+  CreateTripRatingDto,
+  TripMatchingRequest,
+  TripRatingResponseDto,
+  TripResponseDto,
+  TripStatus,
+} from '@repo/shared';
 import { plainToInstance } from 'class-transformer';
 import { TripRating } from './entities/trip-rating.entity';
+import type { ChannelWrapper } from 'amqp-connection-manager';
 
 @Injectable()
 export class TripService {
@@ -17,6 +26,7 @@ export class TripService {
     private tripRepo: Repository<Trip>,
     @InjectRepository(TripRating)
     private tripRatingRepo: Repository<TripRating>,
+    @Inject('RABBITMQ_CHANNEL') private readonly channel: ChannelWrapper,
   ) {}
   async create(dto: CreateTripDto): Promise<TripResponseDto> {
     const estimatedFare = this.calculateEstimatedFare(
@@ -37,13 +47,15 @@ export class TripService {
     });
     const saved = await this.tripRepo.save(trip);
 
-
+    // 2️⃣ Publish sự kiện trip.requested
+    await this.channel.publish(
+      'trip.events',
+      'trip.requested',
+      this.toTripMatchingRequest(trip),
+    );
 
     return plainToInstance(TripResponseDto, saved);
   }
-
-  
-  
 
   async findOne(id: string, userId: string): Promise<TripResponseDto> {
     const trip = await this.tripRepo.findOne({ where: { id } });
@@ -57,6 +69,10 @@ export class TripService {
   async cancel(id: string, userId: string) {
     const trip = await this.tripRepo.findOne({ where: { id } });
     if (!trip) throw new NotFoundException('Trip not found');
+    if (trip.status === TripStatus.SEARCHING) {
+      await this.channel.publish('trip.events', 'trip.cancel', trip.id);
+      return { message: 'Trip cancelled successfully' };
+    }
     if (
       trip.status === TripStatus.CANCELLED ||
       trip.status === TripStatus.COMPLETED
@@ -92,14 +108,27 @@ export class TripService {
       throw new BadRequestException('Unauthorized driver');
     trip.status = TripStatus.COMPLETED;
     await this.tripRepo.save(trip);
+
+    // Publish sự kiện trip.completed
+    await this.channel.publish('trip.events', 'trip.completed', trip.driverId);
+
     return { message: 'Trip completed successfully' };
+  }
+
+  async timeoutTrip(id: string) {
+    const trip = await this.tripRepo.findOne({ where: { id } });
+    if (!trip) throw new NotFoundException('Trip not found');
+    if (trip.status === TripStatus.SEARCHING) {
+      trip.status = TripStatus.CANCELLED;
+      const tripR = await this.tripRepo.save(trip);
+    }
   }
 
   async ratingTrip(
     tripId: string,
     userId: string,
-    dto: CreateTripRatingDto
-  ) : Promise<TripRatingResponseDto> {
+    dto: CreateTripRatingDto,
+  ): Promise<TripRatingResponseDto> {
     const trip = await this.tripRepo.findOne({ where: { id: tripId } });
     if (!trip) throw new NotFoundException('Trip not found');
 
@@ -158,5 +187,20 @@ export class TripService {
 
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
+  }
+
+  // HELPER
+  private toTripMatchingRequest(e: Trip): TripMatchingRequest {
+    return {
+      id: e.id,
+      passengerId: e.passengerId,
+      vehicleType: e.vehicleType,
+      originLat: e.originLat,
+      originLng: e.originLng,
+      destinationLat: e.destinationLat,
+      destinationLng: e.destinationLng,
+      estimatedFare: e.estimatedFare,
+      createdAt: e.createdAt,
+    };
   }
 }

@@ -13,3 +13,16 @@ export const TRIP_MESSAGE = {
   COMPLETE_TRIP: 'complete-trip',
   RATING_TRIP: 'rating-trip',
 };
+
+export const USER_MESSAGE = {
+  GET_USER_BY_ID: 'get-user-by-id',
+  GET_USER_BY_EMAIL: 'get-user-by-email',
+  CREATE_USER: 'create-user',
+  UPDATE_USER: 'update-user',
+  REGISTER_DRIVER_PROFILE: 'register-driver-profile',
+};
+
+export const AUTH_MESSAGE = {
+  VALIDATE_TOKEN: 'validate-token',
+  LOGIN: 'login',
+};
