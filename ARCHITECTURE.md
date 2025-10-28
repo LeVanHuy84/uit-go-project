@@ -61,7 +61,7 @@ flowchart LR
 
   ApiGateway --> |TCP| AuthSvc
   ApiGateway --> |TCP| UserSvc
-  ApiGateway --> ||TCP TripSvc
+  ApiGateway --> |TCP| TripSvc
   ApiGateway --> |TCP DriverSvc
 
   TripSvc -->|Push Event| MQ
