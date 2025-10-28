@@ -1,53 +1,30 @@
 # UIT-Go — ARCHITECTURE.md
 
-**Phiên bản:** v0.1 — Milestone 1 (Demo local)
-
----
-
-## Mục lục
-
-1. Mục tiêu tài liệu
-2. Tóm tắt tiến độ (Milestone 1)
-3. Kiến trúc tổng quan
-4. Thiết kế chi tiết cho bộ xương microservices
-
-   * AuthService
-   * UserService
-   * TripService (chứa matching tạm thời)
-   * DriverService
-5. Giao tiếp giữa các service (sequence flows)
-6. Triển khai local (Docker Compose)
-
-   * Cấu trúc repo
-   * docker-compose.yml (mô tả)
-   * Các container và ports
-   * Hướng dẫn chạy demo + kiểm thử nhanh
-7. API gợi ý & ví dụ curl để chứng minh giao tiếp
-
-   * UserService
-   * TripService
-   * DriverService
-8. Checklist Milestone 1 (những gì đã hoàn thành)
+**Phiên bản:** v0.2 — Milestone 1 (Demo local)
 
 ---
 
 ## 1. Mục tiêu tài liệu
+Tài liệu này trình bày **kiến trúc hệ thống tổng thể** của UIT-Go trong giai đoạn Milestone 1, nhằm mô tả các **thành phần chính, cơ sở dữ liệu, và các đặc tính phi chức năng (NFR)** của hệ thống.  
+Phiên bản này tập trung vào việc triển khai bản **"bộ xương microservices"** có thể chạy trên local bằng Docker Compose.
 
-Tài liệu này mô tả kiến trúc tổng quan của hệ thống UIT-Go, phiên bản bộ xương (skeleton) cho Milestone 1.
+---
 
-## 2. Tóm tắt tiến độ (Milestone 1)
+## 2. Tổng quan kiến trúc hệ thống
 
-* Mục tiêu Milestone 1: "Demo bộ xương chạy trên local (Docker Compose)" — các service có thể communicate qua API.
-* Trạng thái hiện tại (phiên bản đầu tiên nộp):
+### 2.1. Mô tả tổng quan
+UIT-Go là nền tảng kết nối hành khách và tài xế theo mô hình **microservices**, gồm các service chính:
+- **AuthService** – xác thực, cấp JWT.
+- **UserService** – quản lý người dùng (passenger & driver profile).
+- **TripService** – quản lý chuyến đi, trạng thái, và điều phối tài xế.
+- **DriverService** – lưu vị trí, trạng thái tài xế, tìm tài xế gần nhất.
+- **(Bổ sung)**: RabbitMQ, Redis Geo, PostgreSQL cho từng service.
 
-  * Docker Compose chạy được gồm các service: `auth-service`, `user-service`, `trip-service`, `driver-service`.
-  * Mỗi service có DB riêng (postgres trong compose cho User/Trip, redis geo cache cho Driver).
-  * Triển lãm giao tiếp: `api-gateway` có thể gọi `trip-service` (ví dụ: tạo trip), `trip-service` gọi `driver-service` để tìm tài xế gần.
-  * File `docker-compose.yml`, scripts start/stop, và sample curl commands đã sẵn sàng trong repo.
+Tất cả các service giao tiếp qua **REST API** và **event bất đồng bộ (RabbitMQ)**, được điều phối qua **Docker Compose**.
 
-> Ghi chú: chi tiết cấu hình, lệnh chạy và API examples nằm trong phần "Triển khai local" và "API gợi ý".
+---
 
-## 3. Kiến trúc tổng quan
+### 2.2. Sơ đồ kiến trúc tổng thể
 
 (Include diagram: logical services and infra components)
 
@@ -72,40 +49,72 @@ flowchart LR
 
   %% INFRASTRUCTURE
   subgraph Infra["Infrastructure"]
-    PostgresUser["Postgres (users, drivers, vehicles)"]
-    PostgresTrip["Postgres (trips, trip_status, rating)"]
+    PostgresUser["Postgres (users, driver_profiles)"]
+    PostgresTrip["Postgres (trips, trip_rating)"]
     RedisGeo["Redis (geo cache & driver location)"]
     MQ["RabbitMQ Pub/Sub"]
   end
 
   %% RELATIONS
-  Passenger --> ApiGateway
-  DriverApp --> ApiGateway
+  Passenger --> |RESTful/Websocket| ApiGateway
+  DriverApp --> |RESTful/Websocket| ApiGateway
 
-  ApiGateway --> AuthSvc
-  ApiGateway --> UserSvc
-  ApiGateway --> TripSvc
-  ApiGateway --> DriverSvc
+  ApiGateway --> |TCP| AuthSvc
+  ApiGateway --> |TCP| UserSvc
+  ApiGateway --> ||TCP TripSvc
+  ApiGateway --> |TCP DriverSvc
 
-  TripSvc -->|Tìm tài xế gần| MQ
-  MQ --> |Tìm chuyến| DriverSvc
-  DriverSvc --> |Cập nhật trip status| MQ
-  MQ --> |Trip status| TripSvc
+  TripSvc -->|Push Event| MQ
+  MQ --> |Listen| DriverSvc
+  DriverSvc --> |Push Event| MQ
+  MQ --> |Listen| TripSvc
 
   DriverSvc --> RedisGeo
-  DriverSvc --> NotificationSvc
+  MQ --> |Listen| NotificationSvc
   NotificationSvc -->|Push notification| DriverApp
 
   UserSvc --> PostgresUser
 
   TripSvc -->|Ghi nhận doanh thu| PaymentSvc
-  PaymentSvc --> PostgresTrip
 
   TripSvc --> PostgresTrip
 
   %% ALIGN LAYERS
   Clients --- Services --- Infra
+```
+---
+## 3. Data Schema
+### 3.1 User-service schema
+``` mermaid
+flowchart LR
+    %% ===== USER SERVICE =====
+    subgraph UserService["User Service"]
+        direction LR
+        class UserService userService
 
+        USER["USER<br>———<br>id : uuid (PK)<br>email : string (unique)<br>full_name : string<br>password : string<br>role : enum(UserRole) [default: passenger]<br>phone : string (nullable)<br>created_at : timestamp [default: now()]<br>updated_at : timestamp [on update]"]
+
+        DRIVER_PROFILE["DRIVER_PROFILE<br>———<br>id : uuid (PK)<br>user_id : uuid (FK → USER.id, unique)<br>license_number : string<br>vehicle_type : enum(VehicleType)<br>vehicle_brand : string<br>vehicle_model : string<br>license_plate : string<br>created_at : timestamp [default: now()]<br>updated_at : timestamp [on update]"]
+
+        %% Relationship
+        USER -->|"1 — 1 (driverProfile)"| DRIVER_PROFILE
+    end
+```
+### 3.2. Trip-service schema
+``` mermaid
+flowchart LR
+    %% ===== TRIP SERVICE =====
+    subgraph TripService["Trip Service"]
+        direction LR
+        class TripService tripService
+
+        TRIP["TRIP<br>———<br>id : uuid (PK)<br>passenger_id : uuid (FK → USER.id)<br>driver_id : uuid (FK → USER.id, nullable)<br>vehicle_type : enum(VehicleType) [default: MOTORBIKE]<br>origin_lat : float<br>origin_lng : float<br>destination_lat : float<br>destination_lng : float<br>estimated_fare : decimal(10,2)<br>status : enum(TripStatus) [default: SEARCHING]<br>created_at : timestamp [default: now()]<br>updated_at : timestamp [on update]"]
+
+        TRIP_RATING["TRIP_RATING<br>———<br>id : uuid (PK)<br>trip_id : uuid (FK → TRIP.id)<br>passenger_id : uuid (FK → USER.id)<br>driver_id : uuid (FK → USER.id)<br>rating : int (1–5)<br>feedback : string (nullable)<br>created_at : timestamp [default: now()]"]
+
+        %% Relationships
+        TRIP -->|"1 — n (rated)"| TRIP_RATING
+    end
 ```
 
 ## 4. Thiết kế chi tiết cho bộ xương Microservices
@@ -236,74 +245,16 @@ SEARCHING → ACCEPTED → ENROUTE_TO_PICKUP → IN_PROGRESS → COMPLETED / CAN
 
 ---
 
-## 6. Triển khai local (Docker Compose)
+## 6. Non-Functional Requirements (NFRs)
+| **Thuộc tính**      | **Thách thức**                            | **Giải pháp thiết kế**                                                                                   |
+| ------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| **Scalability**     | Xử lý hàng nghìn request đặt xe đồng thời | Mỗi service độc lập (Database per Service), scale riêng lẻ qua Docker/ECS; RabbitMQ để giảm tải đột biến |
+| **Latency**         | Đảm bảo phản hồi <200ms khi tìm tài xế    | Redis Geo API cho truy vấn vị trí nhanh, cache dữ liệu ít thay đổi                                       |
+| **Availability**    | Duy trì hoạt động liên tục 24/7           | Multi-container deployment, health check tự động, retry & reconnect                                      |
+| **Reliability**     | Không mất yêu cầu trong khi tải cao       | RabbitMQ lưu trữ message khi service tạm ngắt kết nối                                                    |
+| **Maintainability** | Dễ mở rộng và thay thế module             | Tách codebase per service, REST interface rõ ràng, cấu hình độc lập                                      |
 
-### Cấu trúc repo mẫu
-
-```
-/uit-go-project/
-  /apps/
-    /api-gateway/
-    /auth-service/
-    /user-service/
-    /trip-service/
-    /driver-service/
-  /packages/
-  docker-compose.yml
-  README.md
-```
-
-### docker-compose.yml (mô tả)
-
-* api-gateway: build, port 4000
-* user-service: build, port 4001
-* trip-service: build, port 4002
-* driver-service: build, port 4003
-* auth-service: build, port 4004
-* db-user: postgres:13, volume, port 5432
-* db-trip: postgres:13, port 5433
-* redis: redis:7 (geo), port 6379
-* rabbit-mq: rabbitmq:3-management, port 5672, management UI port 15672
-
-> Lưu ý: ports trong compose để demo local; production sẽ có RDS/ElastiCache.
-
-## 7. API gợi ý & ví dụ curl
-
-**UserService**
-
-* `POST /users` — tạo user
-* `POST /sessions` — login
-* `GET /users/me` — get profile
-* `POST /users/register-driver-profile` - tạo driver profile
-
-Ví dụ:
-
-```
-curl -X POST http://localhost:3001/users \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"u@example.com","password":"P@ssw0rd","role":"PASSENGER"}'
-```
-
-**TripService**
-
-* `POST /trips` — tạo trip (tripService sẽ gọi driver-service)
-* `GET /trips/{id}` — lấy thông tin trip
-
-**DriverService**
-
-* `PUT /drivers/{id}/location` — cập nhật vị trí
-* `GET /drivers/search?lat=&lng=&radius=` — tìm tài xế
-
-## 8. Checklist Milestone 1
-
-* [x] 4 services implemented minimal REST APIs
-* [x] Docker Compose to run them locally
-* [x] Each service has independent DB in compose
-* [x] TripService can call DriverService to find drivers
-* [x] ARCHITECTURE.md (this file) initial version produced
 
 ---
-
-*Ghi chú:* file này là phiên bản đầu, có thể cập nhật khi nhóm thực hiện các thử nghiệm và có số liệu từ kịch bản load-testing.
 
 ***END OF ARCHITECTURE.md***
