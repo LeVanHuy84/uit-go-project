@@ -1,19 +1,47 @@
-# apps/driver-service/Dockerfile
-FROM node:20-alpine AS builder
-
+# =========================
+# 1. PRUNE (TURBO)
+# =========================
+FROM node:20-alpine AS pruner
 WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-
+RUN npm install -g turbo
 COPY . .
-RUN npm run build --workspace=apps/driver-service
+RUN turbo prune --scope=driver-service --docker 
 
+# =========================
+# 2. INSTALL (DEPENDENCIES)
+# =========================
+FROM node:20-alpine AS installer
+WORKDIR /app
+COPY --from=pruner /app/out/json .
+COPY --from=pruner /app/out/package-lock.json ./package-lock.json
+COPY --from=pruner /app/turbo.json ./turbo.json
+RUN npm ci --ignore-scripts && npm cache clean --force
+
+# =========================
+# 3. BUILD
+# =========================
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY --from=installer /app/ . 
+COPY --from=pruner /app/out/full .
+RUN npm run build
+
+# =========================
+# 4. RUNNER (PRODUCTION)
+# =========================
 FROM node:20-alpine AS runner
 WORKDIR /app
+ENV NODE_ENV=production
+# Add non-root user
+RUN addgroup -g 1001 -S nodejs && \
+  adduser -S nextjs -u 1001
 
-COPY --from=builder /app/dist/apps/driver-service ./dist
-COPY package*.json ./
+COPY --chown=nextjs:nodejs --from=builder /app/ .
 
-RUN npm ci --omit=dev
+USER nextjs
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD node --version || exit 1
 
-CMD ["node", "dist/main.js"]
+EXPOSE 4003
+CMD ["node", "apps/driver-service/dist/main"]
