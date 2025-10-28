@@ -46,8 +46,8 @@ RUN addgroup -g 1001 -S nodejs && \
   adduser -S nextjs -u 1001
 
 COPY --chown=nextjs:nodejs --from=builder /app/ .
-COPY --chown=nextjs:nodejs --from=builder /app/apps/user-service/prisma ./prisma
-COPY --chown=nextjs:nodejs --from=builder /app/apps/user-service/generated ./generated
+COPY --chown=nextjs:nodejs --from=builder /app/node_modules/.prisma ./prisma
+COPY --chown=nextjs:nodejs --from=builder /app/node_modules/@prisma ./generated
 
 
 USER nextjs
@@ -56,4 +56,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD node --version || exit 1
 
 EXPOSE 4001
-CMD ["node", "apps/user-service/dist/main"]
+CMD ["node", "apps/user-service/dist/src/main"]
