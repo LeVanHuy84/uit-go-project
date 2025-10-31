@@ -5,9 +5,13 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { UserRole } from '@prisma/client';
 import { PrismaService } from 'prisma/prisma.service';
-import { CreateDriverProfileDto, CreateUserDto } from '@repo/shared';
+import {
+  CreateDriverProfileDto,
+  CreateUserDto,
+  UserRoleEnum,
+} from '@repo/shared';
+import { UserRole } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
@@ -27,7 +31,7 @@ export class UsersService {
         fullName: dto.fullName,
         password: hashed,
         phone: dto.phone,
-        role: dto.role || UserRole.passenger,
+        role: this.mapToPrismaRole(dto.role ?? UserRoleEnum.PASSENGER),
       },
     });
 
@@ -81,4 +85,8 @@ export class UsersService {
 
     return profile;
   }
+
+  private mapToPrismaRole = (role: UserRoleEnum): UserRole => {
+    return role === UserRoleEnum.DRIVER ? UserRole.driver : UserRole.passenger;
+  };
 }
