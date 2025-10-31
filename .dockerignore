@@ -1,13 +1,16 @@
 # Dependencies
 node_modules
-npm-debug.log
-yarn-error.log
+npm-debug.log*
+*.log
 
 # Build outputs
+.turbo
 dist
-build
-.next
+out
+.cache
+coverage
 tmp
+build
 
 # Testing
 coverage
@@ -32,7 +35,10 @@ Thumbs.db
 # Git
 .git
 .gitignore
+.gitattributes
 .github
+.gitlab
+.gitlab-ci.yml
 
 # Environment files (these should not be in images)
 .env
@@ -51,12 +57,6 @@ README.md
 *.md
 docs
 
-# CI/CD
-.github
-.gitlab-ci.yml
-
-# Nx
-.nx
 
 # Prisma
 generated

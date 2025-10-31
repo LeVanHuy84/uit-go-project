@@ -28,7 +28,8 @@
   ],
   "dependencies": {
     "@nestjs/config": "^4.0.2",
-    "@nestjs/microservices": "^11.1.6",
+    "@nestjs/microservices": "^11.1.8",
+    "@prisma/client": "^6.17.1",
     "amqp-connection-manager": "^5.0.0",
     "amqplib": "^0.10.9",
     "nestjs-zod": "^5.0.1",

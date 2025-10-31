@@ -1,15 +1,169 @@
+
 services:
-  redis:
-    image: redis:7
+
+
+  trip-db:
+    image: neondatabase/neon_local:latest
     ports:
-      - '6379:6379'
-    command: ['redis-server', '--notify-keyspace-events', 'Ex']
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq-1
-    ports:
-      - '5672:5672' # AMQP connection
-      - '15672:15672' # Management UI
+      - '5433:5432'
+    env_file:
+      - ./.env
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      NEON_API_KEY: ${NEON_API_TRIP_PROJECT_KEY}
+      NEON_PROJECT_ID: ${NEON_TRIP_PROJECT_ID}
+      DRIVER: postgres
+    networks:
+      - ride-sharing-net
+  user-db:
+    image: neondatabase/neon_local:latest
+    ports:
+      - '5434:5432'
+    env_file:
+      - ./.env
+    environment:
+      NEON_API_KEY: ${NEON_API_USER_PROJECT_KEY}
+      NEON_PROJECT_ID: ${NEON_USER_PROJECT_ID}
+      DRIVER: postgres
+    networks:
+      - ride-sharing-net
+  api-gateway:
+    build:
+      context: .
+      dockerfile: ./apps/api-gateway/Dockerfile
+      target: runner
+    container_name: api-gateway
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    env_file:
+      - ./apps/api-gateway/.env
+    depends_on:
+      - auth-service
+      - trip-service
+      - driver-service
+    networks:
+      - ride-sharing-net
+    healthcheck:
+      test: ["CMD", "node", "--version"]
+      interval: 30s
+      timeout: 3s
+      retries: 5
+
+  user-service:
+    build:
+      context: .
+      dockerfile: ./apps/user-service/Dockerfile
+      target: runner
+    container_name: user-service
+    restart: unless-stopped
+    ports:
+      - "4001:4001"
+    env_file:
+      - ./apps/user-service/prisma/.env
+    depends_on:
+      - user-db
+    networks:
+      - ride-sharing-net
+    healthcheck:
+      test: ["CMD", "node", "--version"]
+      interval: 30s
+      timeout: 3s
+      retries: 5
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: ./apps/auth-service/Dockerfile
+      target: runner
+    container_name: auth-service
+    restart: unless-stopped
+    ports:
+      - "4004:4004"
+    env_file:
+      - ./apps/auth-service/.env
+    networks:
+      - ride-sharing-net
+    healthcheck:
+      test: ["CMD", "node", "--version"]
+      interval: 30s
+      timeout: 3s
+      retries: 5
+
+  trip-service:
+    build:
+      context: .
+      dockerfile: ./apps/trip-service/Dockerfile
+      target: runner
+    container_name: trip-service
+    restart: unless-stopped
+    ports:
+      - "4002:4002"
+    env_file:
+      - ./apps/trip-service/.env
+    depends_on:
+      - rabbitmq
+      - trip-db
+    networks:
+      - ride-sharing-net
+    healthcheck:
+      test: ["CMD", "node", "--version"]
+      interval: 30s
+      timeout: 3s
+      retries: 5
+
+  driver-service:
+    build:
+      context: .
+      dockerfile: ./apps/driver-service/Dockerfile
+      target: runner
+    container_name: driver-service
+    restart: unless-stopped
+    ports:
+      - "4003:4003"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+      - rabbitmq
+    networks:
+      - ride-sharing-net
+    healthcheck:
+      test: ["CMD", "node", "--version"]
+      interval: 30s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - ride-sharing-net
+    volumes:
+      - redis-data:/data
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    networks:
+      - ride-sharing-net
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+
+networks:
+  ride-sharing-net:
+    driver: bridge
+
+volumes:
+  redis-data:
+    name: redis-data
+  rabbitmq-data:
+    name: rabbitmq-data

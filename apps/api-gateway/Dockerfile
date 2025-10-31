@@ -5,7 +5,7 @@ FROM node:20-alpine AS pruner
 WORKDIR /app
 RUN npm install -g turbo
 COPY . .
-RUN turbo prune --scope=driver-service --docker 
+RUN turbo prune --scope=api-gateway --docker 
 
 # =========================
 # 2. INSTALL (DEPENDENCIES)
@@ -46,5 +46,5 @@ USER nextjs
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD node --version || exit 1
 
-EXPOSE 4003
-CMD ["node", "apps/driver-service/dist/main"]
+EXPOSE 4000
+CMD ["node", "apps/api-gateway/dist/main"]
