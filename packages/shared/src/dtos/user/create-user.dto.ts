@@ -1,5 +1,5 @@
 import { IsEmail, IsNotEmpty, MinLength, IsOptional, IsEnum } from 'class-validator';
-import { UserRole } from '@prisma/client';
+import { UserRoleEnum } from './enums';
 
 export class CreateUserDto {
   @IsEmail()
@@ -16,6 +16,6 @@ export class CreateUserDto {
   phone?: string;
 
   @IsOptional()
-  @IsEnum(UserRole)
-  role?: UserRole;
+  @IsEnum(UserRoleEnum)
+  role?: UserRoleEnum;
 }

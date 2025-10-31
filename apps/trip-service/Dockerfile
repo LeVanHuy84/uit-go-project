@@ -12,6 +12,9 @@ RUN turbo prune --scope=trip-service --docker
 # =========================
 FROM node:20-alpine AS installer
 WORKDIR /app
+
+RUN npm config set registry https://registry.npmmirror.com
+
 COPY --from=pruner /app/out/json .
 COPY --from=pruner /app/out/package-lock.json ./package-lock.json
 COPY --from=pruner /app/turbo.json ./turbo.json
