@@ -16,8 +16,8 @@ import { jwtConstants } from './constant';
         name: 'USER_SERVICE',
         transport: Transport.TCP,
         options: {
-          host: 'localhost',
-          port: 4001,
+          host: process.env.USER_HOST,
+          port: parseInt(process.env.USER_PORT ?? '4001'),
         },
       },
     ]),

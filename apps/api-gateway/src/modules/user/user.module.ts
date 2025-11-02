@@ -14,6 +14,7 @@ import { UsersController } from './user.controller';
         useFactory: (config: ConfigService) => ({
           transport: Transport.TCP,
           options: {
+            host: config.get<string>('USER_SERVICE_HOST'),
             port: config.get<number>('USER_SERVICE_PORT'),
           },
         }),

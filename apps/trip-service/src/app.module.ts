@@ -1,9 +1,9 @@
-  import { Module } from '@nestjs/common';
-  import { ConfigModule, ConfigService } from '@nestjs/config';
-  import { TypeOrmModule } from '@nestjs/typeorm';
-  import { TripModule } from './trip/trip.module';
-  import path from 'path';
-  import { RabbitmqModule } from '@repo/shared';
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { TripModule } from './trip/trip.module';
+import path from 'path';
+import { RabbitmqModule } from '@repo/shared';
 
 @Module({
   imports: [
@@ -22,7 +22,9 @@
       }),
     }),
     RabbitmqModule.register({
-      urls: ['amqp://guest:guest@localhost:5672'],
+      urls: [
+        `amqp://${process.env.RABBITMQ_USER}:${process.env.RABBITMQ_PASS}@${process.env.RABBITMQ_HOST}:${process.env.RABBITMQ_PORT}`,
+      ],
       exchanges: [
         { name: 'trip.events', type: 'topic' },
         { name: 'driver.events', type: 'topic' },

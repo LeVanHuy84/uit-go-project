@@ -6,7 +6,8 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AuthController } from './auth.controller';
 import { SERVICE_NAME } from '@repo/shared';
 
-const jwtSecret = process.env.JWT_SECRET || 'changeme_should_be_long_and_random';
+const jwtSecret =
+  process.env.JWT_SECRET || 'changeme_should_be_long_and_random';
 
 @Module({
   imports: [
@@ -20,7 +21,7 @@ const jwtSecret = process.env.JWT_SECRET || 'changeme_should_be_long_and_random'
         name: SERVICE_NAME.AUTH_SERVICE,
         transport: Transport.TCP,
         options: {
-          host: process.env.AUTH_HOST ?? 'localhost',
+          host: process.env.AUTH_HOST,
           port: parseInt(process.env.AUTH_PORT ?? '4004'),
         },
       },

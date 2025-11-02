@@ -3,7 +3,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 // import dbConfig from './config/db.config';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { DriverModule } from './driver/driver.module';
 import { RedisModule } from '@nestjs-modules/ioredis';
 import { RabbitmqModule } from '@repo/shared';
@@ -29,7 +28,9 @@ import { MatchingModule } from './matching/matching.module';
       },
     }),
     RabbitmqModule.register({
-      urls: ['amqp://guest:guest@localhost:5672'],
+      urls: [
+        `amqp://${process.env.RABBITMQ_USER}:${process.env.RABBITMQ_PASS}@${process.env.RABBITMQ_HOST}:${process.env.RABBITMQ_PORT}`,
+      ],
       exchanges: [
         { name: 'trip.events', type: 'topic' },
         { name: 'driver.events', type: 'topic' },

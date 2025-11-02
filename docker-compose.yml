@@ -1,7 +1,4 @@
-
 services:
-
-
   trip-db:
     image: neondatabase/neon_local:latest
     ports:
@@ -34,17 +31,18 @@ services:
     container_name: api-gateway
     restart: unless-stopped
     ports:
-      - "4000:4000"
+      - '4000:4000'
     env_file:
       - ./apps/api-gateway/.env
     depends_on:
+      - user-service
       - auth-service
       - trip-service
       - driver-service
     networks:
       - ride-sharing-net
     healthcheck:
-      test: ["CMD", "node", "--version"]
+      test: ['CMD', 'node', '--version']
       interval: 30s
       timeout: 3s
       retries: 5
@@ -57,7 +55,7 @@ services:
     container_name: user-service
     restart: unless-stopped
     ports:
-      - "4001:4001"
+      - '4001:4001'
     env_file:
       - ./apps/user-service/prisma/.env
     depends_on:
@@ -65,7 +63,7 @@ services:
     networks:
       - ride-sharing-net
     healthcheck:
-      test: ["CMD", "node", "--version"]
+      test: ['CMD', 'node', '--version']
       interval: 30s
       timeout: 3s
       retries: 5
@@ -78,13 +76,13 @@ services:
     container_name: auth-service
     restart: unless-stopped
     ports:
-      - "4004:4004"
+      - '4004:4004'
     env_file:
       - ./apps/auth-service/.env
     networks:
       - ride-sharing-net
     healthcheck:
-      test: ["CMD", "node", "--version"]
+      test: ['CMD', 'node', '--version']
       interval: 30s
       timeout: 3s
       retries: 5
@@ -97,7 +95,7 @@ services:
     container_name: trip-service
     restart: unless-stopped
     ports:
-      - "4002:4002"
+      - '4002:4002'
     env_file:
       - ./apps/trip-service/.env
     depends_on:
@@ -106,7 +104,7 @@ services:
     networks:
       - ride-sharing-net
     healthcheck:
-      test: ["CMD", "node", "--version"]
+      test: ['CMD', 'node', '--version']
       interval: 30s
       timeout: 3s
       retries: 5
@@ -119,17 +117,16 @@ services:
     container_name: driver-service
     restart: unless-stopped
     ports:
-      - "4003:4003"
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      - '4003:4003'
+    env_file:
+      - ./apps/driver-service/.env
     depends_on:
       - redis
       - rabbitmq
     networks:
       - ride-sharing-net
     healthcheck:
-      test: ["CMD", "node", "--version"]
+      test: ['CMD', 'node', '--version']
       interval: 30s
       timeout: 3s
       retries: 5
@@ -138,7 +135,7 @@ services:
     image: redis:7-alpine
     container_name: redis
     ports:
-      - "6379:6379"
+      - '6379:6379'
     networks:
       - ride-sharing-net
     volumes:
@@ -148,8 +145,8 @@ services:
     image: rabbitmq:3-management-alpine
     container_name: rabbitmq
     ports:
-      - "5672:5672"   # AMQP
-      - "15672:15672" # Management UI
+      - '5672:5672' # AMQP
+      - '15672:15672' # Management UI
     environment:
       - RABBITMQ_DEFAULT_USER=guest
       - RABBITMQ_DEFAULT_PASS=guest

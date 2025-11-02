@@ -8,8 +8,8 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   app.enableVersioning({
     type: VersioningType.URI,
-    prefix: 'v'
-  })
+    prefix: 'v',
+  });
 
   await app.listen(process.env.GATEWAY_PORT ?? 4000);
   console.log(`API Gateway is running on: ${await app.getUrl()}`);

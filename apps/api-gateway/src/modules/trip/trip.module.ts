@@ -6,20 +6,21 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
-      ClientsModule.registerAsync([
-        {
-          name: SERVICE_NAME.TRIP_SERVICE,
-          imports: [ConfigModule],
-          inject: [ConfigService],
-          useFactory: (config: ConfigService) => ({
-            transport: Transport.TCP,
-            options: {
-              port: config.get<number>('TRIP_SERVICE_PORT'),
-            },
-          }),
-        },
-      ]),
-    ],
-  controllers: [TripController]
+    ClientsModule.registerAsync([
+      {
+        name: SERVICE_NAME.TRIP_SERVICE,
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (config: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: config.get<string>('TRIP_SERVICE_HOST'),
+            port: config.get<number>('TRIP_SERVICE_PORT'),
+          },
+        }),
+      },
+    ]),
+  ],
+  controllers: [TripController],
 })
 export class TripModule {}

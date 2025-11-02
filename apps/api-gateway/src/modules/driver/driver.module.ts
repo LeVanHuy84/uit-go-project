@@ -14,6 +14,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         useFactory: (config: ConfigService) => ({
           transport: Transport.TCP,
           options: {
+            host: config.get<string>('DRIVER_SERVICE_HOST'),
             port: config.get<number>('DRIVER_SERVICE_PORT'),
           },
         }),
