@@ -84,8 +84,6 @@ export class DriverLockService {
         }
       }
 
-      console.log('driver', desiredCount.toString());
-
       return drivers.slice(0, desiredCount);
     } catch (err) {
       this.logger.error('findNearbyDrivers failed', err as any);

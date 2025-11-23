@@ -4,16 +4,14 @@ import { Transport } from '@nestjs/microservices';
 import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
-  const app = await NestFactory.createMicroservice(
-    AppModule,
-    {
-      transport: Transport.TCP,
-      options: {
-        host: process.env.AUTH_HOST ?? 'localhost',
-        port: parseInt(process.env.AUTH_PORT ?? '4004'),
-      },
+  const app = await NestFactory.createMicroservice(AppModule, {
+    transport: Transport.TCP,
+    options: {
+      host: process.env.AUTH_HOST ?? 'localhost',
+      port: parseInt(process.env.AUTH_PORT ?? '4004'),
     },
-  );
+    logger: false,
+  });
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 

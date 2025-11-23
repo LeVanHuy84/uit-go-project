@@ -21,6 +21,15 @@ import { RabbitmqModule } from '@repo/shared';
         synchronize: true,
       }),
     }),
+    RabbitmqModule.register({
+      urls: [
+        `amqp://${process.env.RABBITMQ_USER}:${process.env.RABBITMQ_PASS}@${process.env.RABBITMQ_HOST}:${process.env.RABBITMQ_PORT}`,
+      ],
+      exchanges: [
+        { name: 'trip.events', type: 'topic' },
+        { name: 'driver.events', type: 'topic' },
+      ],
+    }),
     TripModule,
   ],
 })

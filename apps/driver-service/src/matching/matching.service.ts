@@ -78,8 +78,6 @@ export class MatchingService {
       vehicleType: trip.vehicleType,
     };
 
-    console.log('query: ', query);
-
     const candidates = await this.driverLockService.findNearbyDrivers(query);
     if (!candidates.length) {
       this.logger.warn(`No nearby drivers found for trip ${tripId}`);
