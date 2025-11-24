@@ -26,6 +26,8 @@
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/typeorm": "^11.0.0",
     "@repo/shared": "*",
+    "amqp-connection-manager": "^5.0.0",
+    "amqplib": "^0.10.9",
     "ioredis": "^5.8.1",
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
