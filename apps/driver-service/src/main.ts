@@ -12,7 +12,7 @@ async function bootstrap() {
         host: process.env.DRIVER_HOST ?? '0.0.0.0',
         port: parseInt(process.env.DRIVER_PORT ?? '4003'),
       },
-      logger: false,
+      // logger: false,
     },
   );
 

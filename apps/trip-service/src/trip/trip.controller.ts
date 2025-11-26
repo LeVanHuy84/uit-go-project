@@ -7,11 +7,11 @@ export class TripController {
   constructor(private readonly tripService: TripService) {}
 
   @MessagePattern(TRIP_MESSAGE.CREATE_TRIP)
-  create(@Payload() data: { dto: CreateTripDto}) {
-    return this.tripService.create(data.dto);
+  create(@Payload() data: { dto: CreateTripDto; userId: string }) {
+    return this.tripService.create(data.dto, data.userId);
   }
   @MessagePattern(TRIP_MESSAGE.GET_TRIP_BY_ID)
-  findOne(@Payload() data: { id: string, userId: string }) {
+  findOne(@Payload() data: { id: string; userId: string }) {
     return this.tripService.findOne(data.id, data.userId);
   }
 
@@ -31,9 +31,14 @@ export class TripController {
   }
 
   @MessagePattern(TRIP_MESSAGE.RATING_TRIP)
-  ratingTrip(@Payload() data: { tripId: string; userId: string; dto: CreateTripRatingDto }) {
+  ratingTrip(
+    @Payload()
+    data: {
+      tripId: string;
+      userId: string;
+      dto: CreateTripRatingDto;
+    },
+  ) {
     return this.tripService.ratingTrip(data.tripId, data.userId, data.dto);
   }
-
-
 }

@@ -10,7 +10,7 @@ async function bootstrap() {
       host: process.env.AUTH_HOST ?? 'localhost',
       port: parseInt(process.env.AUTH_PORT ?? '4004'),
     },
-    logger: false,
+    // logger: false,
   });
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));

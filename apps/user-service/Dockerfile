@@ -32,8 +32,8 @@ COPY --from=installer /app/ .
 COPY --from=pruner /app/out/full .
 
 WORKDIR /app
+COPY --from=pruner /app/out/full/apps/user-service/prisma ./prisma
 RUN npm run prisma:generate
-
 
 WORKDIR /app
 RUN npm run build
@@ -61,4 +61,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD node --version || exit 1
 
 EXPOSE 4001
-CMD ["node", "apps/user-service/dist/src/main"]
+CMD npx prisma db push && node apps/user-service/dist/src/main

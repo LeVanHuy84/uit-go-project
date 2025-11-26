@@ -5,28 +5,30 @@ services:
   # DATABASES & BROKERS
   # -------------------------
   trip-db:
-    image: neondatabase/neon_local:latest
+    image: postgres:15-alpine
+    container_name: trip-db
     ports:
       - '5433:5432'
-    env_file:
-      - ./.env
     environment:
-      NEON_API_KEY: ${NEON_API_TRIP_PROJECT_KEY}
-      NEON_PROJECT_ID: ${NEON_TRIP_PROJECT_ID}
-      DRIVER: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: trip
+    volumes:
+      - trip-data:/var/lib/postgresql/data
     networks:
       - ride-sharing-net
 
   user-db:
-    image: neondatabase/neon_local:latest
+    image: postgres:15-alpine
+    container_name: user-db
     ports:
       - '5434:5432'
-    env_file:
-      - ./.env
     environment:
-      NEON_API_KEY: ${NEON_API_USER_PROJECT_KEY}
-      NEON_PROJECT_ID: ${NEON_USER_PROJECT_ID}
-      DRIVER: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: user
+    volumes:
+      - user-data:/var/lib/postgresql/data
     networks:
       - ride-sharing-net
 
@@ -35,6 +37,8 @@ services:
     container_name: redis
     ports:
       - '6379:6379'
+    command: >
+      redis-server --notify-keyspace-events Ex
     networks:
       - ride-sharing-net
     volumes:
@@ -64,22 +68,22 @@ services:
       target: runner
     restart: unless-stopped
     env_file:
-      - ./apps/user-service/prisma/.env
+      - ./apps/user-service/.env
     depends_on:
       - user-db
     networks:
       - ride-sharing-net
 
-  auth-service:
-    build:
-      context: .
-      dockerfile: ./apps/auth-service/Dockerfile
-      target: runner
-    restart: unless-stopped
-    env_file:
-      - ./apps/auth-service/.env
-    networks:
-      - ride-sharing-net
+  # auth-service:
+  #   build:
+  #     context: .
+  #     dockerfile: ./apps/auth-service/Dockerfile
+  #     target: runner
+  #   restart: unless-stopped
+  #   env_file:
+  #     - ./apps/auth-service/.env
+  #   networks:
+  #     - ride-sharing-net
 
   trip-service:
     build:
@@ -124,7 +128,7 @@ services:
       - ride-sharing-net
     depends_on:
       - user-haproxy
-      - auth-haproxy
+      # - auth-haproxy
       - trip-haproxy
       - driver-haproxy
 
@@ -159,17 +163,17 @@ services:
     depends_on:
       - user-service
 
-  auth-haproxy:
-    image: haproxy:2.8-alpine
-    container_name: auth-haproxy
-    ports:
-      - '4004:4004'
-    volumes:
-      - ./haproxy/auth.cfg:/usr/local/etc/haproxy/haproxy.cfg
-    networks:
-      - ride-sharing-net
-    depends_on:
-      - auth-service
+  # auth-haproxy:
+  #   image: haproxy:2.8-alpine
+  #   container_name: auth-haproxy
+  #   ports:
+  #     - '4004:4004'
+  #   volumes:
+  #     - ./haproxy/auth.cfg:/usr/local/etc/haproxy/haproxy.cfg
+  #   networks:
+  #     - ride-sharing-net
+  #   depends_on:
+  #     - auth-service
 
   trip-haproxy:
     image: haproxy:2.8-alpine
@@ -202,3 +206,5 @@ networks:
 volumes:
   redis-data:
   rabbitmq-data:
+  user-data:
+  trip-data:

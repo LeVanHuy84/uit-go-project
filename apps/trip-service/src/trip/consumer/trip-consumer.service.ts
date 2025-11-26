@@ -28,7 +28,7 @@ export class TripConsumer implements OnModuleInit {
               );
               break;
             }
-            this.logger.log(`Received driver.timeout for trip=${tripId}`);
+            // this.logger.log(`Received driver.timeout for trip=${tripId}`);
             this.tripService.timeoutTrip(tripId);
             break;
           }

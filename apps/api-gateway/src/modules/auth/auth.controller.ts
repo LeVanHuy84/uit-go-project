@@ -17,7 +17,7 @@ import { Public } from 'src/common/decorators/public.decorator';
 })
 export class AuthController {
   constructor(
-    @Inject(SERVICE_NAME.AUTH_SERVICE) private authClient: ClientProxy,
+    @Inject(SERVICE_NAME.USER_SERVICE) private authClient: ClientProxy,
   ) {}
 
   @Public()

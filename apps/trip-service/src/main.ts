@@ -11,7 +11,7 @@ async function bootstrap() {
         host: process.env.TRIP_SERVICE_HOST || '0.0.0.0',
         port: parseInt(process.env.TRIP_SERVICE_PORT ?? '4002'),
       },
-      logger: false,
+      // logger: false,
     },
   );
   await app.listen();

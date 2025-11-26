@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { CreateTripDto, SERVICE_NAME, TRIP_MESSAGE } from '@repo/shared';
+import { CurrentUserId } from 'src/common/decorators/current-user-id.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
 
 @Controller({
@@ -30,10 +31,13 @@ export class TripController {
     });
   }
 
-  @Public()
   @Post()
-  createTrip(@Body() dto: CreateTripDto) {
-    return this.tripServiceClient.send(TRIP_MESSAGE.CREATE_TRIP, { dto });
+  createTrip(@Body() dto: CreateTripDto, @Req() req) {
+    const userId = req.user?.userId;
+    return this.tripServiceClient.send(TRIP_MESSAGE.CREATE_TRIP, {
+      dto,
+      userId,
+    });
   }
 
   @Post(':id/cancel')

@@ -28,7 +28,7 @@ export class TripService {
     private tripRatingRepo: Repository<TripRating>,
     @Inject('RABBITMQ_CHANNEL') private readonly channel: ChannelWrapper,
   ) {}
-  async create(dto: CreateTripDto): Promise<TripResponseDto> {
+  async create(dto: CreateTripDto, userId: string): Promise<TripResponseDto> {
     const estimatedFare = this.calculateEstimatedFare(
       dto.pickup.lat,
       dto.pickup.lng,
@@ -36,7 +36,7 @@ export class TripService {
       dto.dropOff.lng,
     );
     const trip = this.tripRepo.create({
-      passengerId: dto.passengerId,
+      passengerId: userId,
       vehicleType: dto.vehicleType,
       originLat: dto.pickup.lat,
       originLng: dto.pickup.lng,
@@ -48,11 +48,13 @@ export class TripService {
     const saved = await this.tripRepo.save(trip);
 
     // 2️⃣ Publish sự kiện trip.requested
-    await this.channel.publish(
-      'trip.events',
-      'trip.requested',
-      this.toTripMatchingRequest(trip),
-    );
+    if (process.env.PERF_TEST_MODE !== 'true') {
+      await this.channel.publish(
+        'trip.events',
+        'trip.requested',
+        this.toTripMatchingRequest(trip),
+      );
+    }
 
     return plainToInstance(TripResponseDto, saved);
   }
@@ -70,7 +72,9 @@ export class TripService {
     const trip = await this.tripRepo.findOne({ where: { id } });
     if (!trip) throw new NotFoundException('Trip not found');
     if (trip.status === TripStatus.SEARCHING) {
-      await this.channel.publish('trip.events', 'trip.cancel', trip.id);
+      if (process.env.PERF_TEST_MODE !== 'true') {
+        await this.channel.publish('trip.events', 'trip.cancel', trip.id);
+      }
       return { message: 'Trip cancelled successfully' };
     }
     if (
@@ -110,7 +114,13 @@ export class TripService {
     await this.tripRepo.save(trip);
 
     // Publish sự kiện trip.completed
-    await this.channel.publish('trip.events', 'trip.completed', trip.driverId);
+    if (process.env.PERF_TEST_MODE !== 'true') {
+      await this.channel.publish(
+        'trip.events',
+        'trip.completed',
+        trip.driverId,
+      );
+    }
 
     return { message: 'Trip completed successfully' };
   }
