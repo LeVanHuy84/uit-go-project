@@ -1,11 +1,5 @@
 import { Controller } from '@nestjs/common';
-import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
-import {
-  DRIVER_MESSAGE,
-  DriverQuery,
-  UpdateDriverStatusDto,
-  UpdateLocationDto,
-} from '@repo/shared';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 import { MatchingService } from './matching.service';
 
 @Controller('matching')

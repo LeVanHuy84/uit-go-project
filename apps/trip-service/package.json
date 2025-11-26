@@ -28,6 +28,8 @@
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/typeorm": "^11.0.0",
     "@repo/shared": "*",
+    "amqp-connection-manager": "^5.0.0",
+    "amqplib": "^0.10.9",
     "class-transformer": "^0.5.1",
     "dotenv": "^17.2.3",
     "pg": "^8.16.3",

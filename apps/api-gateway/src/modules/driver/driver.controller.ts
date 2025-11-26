@@ -49,7 +49,6 @@ export class DriverController {
   // Hàm để debug
   @Get('search')
   searchNearbyDrivers(@Query() query: DriverQuery) {
-    console.log('query', query);
     return this.client.send(DRIVER_MESSAGE.SEARCH_NEARBY, query);
   }
 

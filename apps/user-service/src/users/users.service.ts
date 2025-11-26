@@ -4,7 +4,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
+import * as argon2 from 'argon2';
 import { PrismaService } from 'prisma/prisma.service';
 import {
   CreateDriverProfileDto,
@@ -23,7 +23,12 @@ export class UsersService {
     });
     if (existing) throw new ConflictException('Email already in use');
 
-    const hashed = await bcrypt.hash(dto.password, 10);
+    const hashed = await argon2.hash(dto.password, {
+      type: argon2.argon2id,
+      memoryCost: 4096,
+      timeCost: 1,
+      parallelism: 1,
+    });
 
     const user = await this.prisma.user.create({
       data: {
@@ -44,7 +49,10 @@ export class UsersService {
   }
 
   async findById(id: string) {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: { driverProfile: true },
+    });
     if (!user) throw new NotFoundException('User not found');
     const { password, ...rest } = user as any;
     return rest;

@@ -12,6 +12,7 @@ async function bootstrap() {
         host: process.env.USER_HOST ?? '0.0.0.0',
         port: parseInt(process.env.USER_PORT ?? '4001'),
       },
+      // logger: false,
     },
   );
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));

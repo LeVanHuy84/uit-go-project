@@ -41,8 +41,18 @@ export class DriverConsumer implements OnModuleInit {
           }
 
           if (routingKey === 'trip.completed') {
-            // trip-service publish driverId (string)
-            const driverId = msg.content.toString();
+            const raw = msg.content.toString();
+
+            let driverId: string;
+
+            try {
+              const parsed = JSON.parse(raw);
+              if (typeof parsed === 'string') driverId = parsed;
+              else driverId = raw; // fallback
+            } catch {
+              driverId = raw;
+            }
+
             this.driverService.updateStatus(driverId, DriverStatus.ONLINE);
           }
         } catch (err) {

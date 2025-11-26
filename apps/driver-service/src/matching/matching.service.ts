@@ -78,11 +78,9 @@ export class MatchingService {
       vehicleType: trip.vehicleType,
     };
 
-    console.log('query: ', query);
-
     const candidates = await this.driverLockService.findNearbyDrivers(query);
     if (!candidates.length) {
-      this.logger.warn(`No nearby drivers found for trip ${tripId}`);
+      // this.logger.warn(`No nearby drivers found for trip ${tripId}`);
       await this.handleUnassignedTrip(tripId);
       return;
     }
@@ -123,9 +121,9 @@ export class MatchingService {
       return;
     }
 
-    this.logger.warn(
-      `All current nearby drivers unavailable for trip ${tripId}`,
-    );
+    // this.logger.warn(
+    //   `All current nearby drivers unavailable for trip ${tripId}`,
+    // );
     await this.handleUnassignedTrip(tripId);
   }
 
@@ -139,7 +137,9 @@ export class MatchingService {
 
     if (count > this.MAX_RETRY) {
       this.logger.warn(`Trip ${tripId} exceeded max retry (${this.MAX_RETRY})`);
-      this.channel.publish('driver.events', 'driver.timeout', { tripId });
+      if (process.env.PERF_TEST_MODE !== 'true') {
+        this.channel.publish('driver.events', 'driver.timeout', { tripId });
+      }
       await this.publishNotification('trip.failed', { tripId });
       return;
     }
@@ -171,17 +171,20 @@ export class MatchingService {
     return { success: true };
   }
 
-  async handleDriverAccepted(driverId: string, tripId: string) {
+  async handleDriverAccepted(
+    driverId: string,
+    tripId: string,
+  ): Promise<boolean> {
     const lockKey = `${this.LOCK_PREFIX}${driverId}`;
     const current = await this.redis.get(lockKey);
     if (current !== tripId) {
-      return { success: false };
+      return false;
     }
 
     const raw = await this.redis.get(`${this.TRIP_META}${tripId}`);
     if (!raw) {
-      this.logger.warn(`No trip meta found for ${tripId}`);
-      return;
+      // this.logger.warn(`No trip meta found for ${tripId}`);
+      return false;
     }
     const trip = JSON.parse(raw) as TripMatchingRequest;
     const { passengerId } = trip;
@@ -192,23 +195,28 @@ export class MatchingService {
     await this.redis.del(`${this.TRIP_META}${tripId}`);
 
     // ✅ Đổi status tài xế thành BUSY (tránh match chuyến khác)
-    await this.driverService.updateStatus(driverId, DriverStatus.BUSY);
+    const result = await this.driverService.updateStatus(
+      driverId,
+      DriverStatus.BUSY,
+    );
 
-    this.channel.publish('driver.events', 'driver.accepted', {
-      tripId,
-      driverId,
-    });
-    await this.publishNotification('driver.accepted', {
-      tripId,
-      driverId,
-      passengerId,
-    });
-    this.logger.log(`Driver ${driverId} accepted trip ${tripId}`);
-    return { success: true };
+    if (process.env.PERF_TEST_MODE !== 'true') {
+      this.channel.publish('driver.events', 'driver.accepted', {
+        tripId,
+        driverId,
+      });
+    }
+    // await this.publishNotification('driver.accepted', {
+    //   tripId,
+    //   driverId,
+    //   passengerId,
+    // });
+    // this.logger.log(`Driver ${driverId} accepted trip ${tripId}`);
+    return true;
   }
 
   async handleTripCancelled(tripId: string) {
-    this.logger.warn(`handleTripCancelled: trip=${tripId}`);
+    // this.logger.warn(`handleTripCancelled: trip=${tripId}`);
 
     // Xoá toàn bộ cache liên quan đến trip
     const triedKey = `${this.TRIED_PREFIX}${tripId}`;
@@ -225,7 +233,7 @@ export class MatchingService {
       if (lockedTrip === tripId) {
         await this.redis.del(lockKey);
         await this.redis.del(tripByDriverKey);
-        this.logger.debug(`Cleared lock & cache for driver=${driverId}`);
+        // this.logger.debug(`Cleared lock & cache for driver=${driverId}`);
       }
     }
 
@@ -235,12 +243,14 @@ export class MatchingService {
     // Gửi thông báo để driver app huỷ tìm kiếm nếu đang hiển thị popup
     await this.publishNotification('trip.cancelled', { tripId });
 
-    this.logger.log(`Trip ${tripId} cancelled and caches cleared`);
+    // this.logger.log(`Trip ${tripId} cancelled and caches cleared`);
   }
 
   private async publishNotification(routingKey: string, payload: any) {
     try {
-      this.channel.publish('notification', routingKey, payload);
+      if (process.env.PERF_TEST_MODE !== 'true') {
+        this.channel.publish('notification', routingKey, payload);
+      }
       this.logger.log(`Published ${routingKey}`);
     } catch (err) {
       this.logger.error('publishNotification failed', err as any);

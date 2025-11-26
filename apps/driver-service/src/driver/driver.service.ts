@@ -29,7 +29,7 @@ export class DriverService {
       // ⚙️ Refresh TTL nếu đang online
       const status = await this.redis.get(`status:${id}`);
       if (status) {
-        await this.redis.expire(`status:${id}`, 120);
+        await this.redis.expire(`status:${id}`, 300);
       }
     } catch (err) {
       this.logger.error(`updateLocation failed for ${id}`, err as any);
@@ -49,8 +49,8 @@ export class DriverService {
     try {
       const pipeline = this.redis.pipeline();
 
-      // set status with TTL (2 minutes)
-      pipeline.set(`status:${id}`, status, 'EX', 120);
+      // set status with TTL (5 minutes)
+      pipeline.set(`status:${id}`, status, 'EX', 300);
 
       // update vehicleType in hash nếu có
       if (vehicleType) {
