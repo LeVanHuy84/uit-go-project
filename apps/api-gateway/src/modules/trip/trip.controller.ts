@@ -61,10 +61,11 @@ export class TripController {
   @Post(':id/complete')
   completeTrip(@Param('id') id: string, @Req() req) {
     const driverId = req.user?.userId;
-    return this.tripServiceClient.send(TRIP_MESSAGE.COMPLETE_TRIP, {
+    this.tripServiceClient.emit(TRIP_MESSAGE.COMPLETE_TRIP, {
       id,
       driverId,
     });
+    return { message: 'Pending request' };
   }
 
   @Post(':id/rating')

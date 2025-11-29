@@ -48,13 +48,11 @@ export class TripService {
     const saved = await this.tripRepo.save(trip);
 
     // 2️⃣ Publish sự kiện trip.requested
-    if (process.env.PERF_TEST_MODE !== 'true') {
-      await this.channel.publish(
-        'trip.events',
-        'trip.requested',
-        this.toTripMatchingRequest(trip),
-      );
-    }
+    await this.channel.publish(
+      'trip.events',
+      'trip.requested',
+      this.toTripMatchingRequest(trip),
+    );
 
     return plainToInstance(TripResponseDto, saved);
   }
@@ -72,9 +70,7 @@ export class TripService {
     const trip = await this.tripRepo.findOne({ where: { id } });
     if (!trip) throw new NotFoundException('Trip not found');
     if (trip.status === TripStatus.SEARCHING) {
-      if (process.env.PERF_TEST_MODE !== 'true') {
-        await this.channel.publish('trip.events', 'trip.cancel', trip.id);
-      }
+      await this.channel.publish('trip.events', 'trip.cancel', trip.id);
       return { message: 'Trip cancelled successfully' };
     }
     if (
@@ -100,27 +96,32 @@ export class TripService {
     trip.status = TripStatus.ACCEPTED;
     trip.driverId = driverId;
     await this.tripRepo.save(trip);
+    await this.channel.publish('notification', 'driver.accepted', {
+      tripId: trip.id,
+      driverId: driverId,
+    });
     return { message: 'Trip accepted successfully' };
   }
 
   async completeTrip(id: string, driverId: string) {
     const trip = await this.tripRepo.findOne({ where: { id } });
-    if (!trip) throw new NotFoundException('Trip not found');
-    if (trip.status !== TripStatus.ACCEPTED)
-      throw new BadRequestException('Trip not in progress');
-    if (trip.driverId !== driverId)
-      throw new BadRequestException('Unauthorized driver');
+    if (!trip) {
+      console.error(`Trip not found: ${id}`);
+      return;
+    }
+    if (trip.status !== TripStatus.ACCEPTED) {
+      console.error(`Trip not in ACCEPTED status: ${id}`);
+      return;
+    }
+    if (trip.driverId !== driverId) {
+      console.error(`Driver mismatch for trip: ${id}`);
+      return;
+    }
     trip.status = TripStatus.COMPLETED;
     await this.tripRepo.save(trip);
 
     // Publish sự kiện trip.completed
-    if (process.env.PERF_TEST_MODE !== 'true') {
-      await this.channel.publish(
-        'trip.events',
-        'trip.completed',
-        trip.driverId,
-      );
-    }
+    await this.channel.publish('trip.events', 'trip.completed', trip.driverId);
 
     return { message: 'Trip completed successfully' };
   }

@@ -61,11 +61,13 @@ export class DriverController {
 
   @Post('reject')
   rejectTrip(@Body() body: { driverId: string; tripId: string }) {
-    return this.client.send('driver_reject_trip', body);
+    this.client.emit('driver_reject_trip', body);
+    return { message: 'Pending request' };
   }
 
   @Post('accept')
   acceptTrip(@Body() body: { driverId: string; tripId: string }) {
-    return this.client.send('driver_accept_trip', body);
+    this.client.emit('driver_accept_trip', body);
+    return { message: 'Pending request' };
   }
 }
