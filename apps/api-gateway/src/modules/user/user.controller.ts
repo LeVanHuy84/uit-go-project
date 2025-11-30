@@ -1,15 +1,5 @@
-import {
-  Controller,
-  Post,
-  Body,
-  Get,
-  Put,
-  UseGuards,
-  Req,
-  Inject,
-} from '@nestjs/common';
+import { Controller, Post, Body, Get, Put, Req, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { firstValueFrom } from 'rxjs';
 import {
   CreateDriverProfileDto,
@@ -36,7 +26,6 @@ export class UsersController {
     return firstValueFrom(this.userClient.send(USER_MESSAGE.CREATE_USER, dto));
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('me')
   async me(@Req() req: any) {
     return firstValueFrom(
@@ -44,7 +33,6 @@ export class UsersController {
     );
   }
 
-  @UseGuards(JwtAuthGuard)
   @Put('me')
   async updateMe(@Req() req: any, @Body() dto: UpdateUserDto) {
     return firstValueFrom(

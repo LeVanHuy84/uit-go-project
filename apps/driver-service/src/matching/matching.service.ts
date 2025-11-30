@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import Redis from 'ioredis';
+import type Redis from 'ioredis';
 import type { ChannelWrapper } from 'amqp-connection-manager';
 import { DriverQuery, DriverStatus, TripMatchingRequest } from '@repo/shared';
 
@@ -33,38 +33,22 @@ export class MatchingService {
     private readonly driverService: DriverService,
   ) {}
 
-  /**
-   * Entry: nhận trip.requested
-   */
   async handleTripRequested(trip: TripMatchingRequest) {
     const { id } = trip;
-    this.logger.log(`handleTripRequested: ${id}`);
-
-    // Cache trip meta
     await this.redis.set(
       `${this.TRIP_META}${id}`,
       JSON.stringify(trip),
       'EX',
       this.TRIP_META_TTL,
     );
-
-    // Reset tried set & retry counter
     await this.redis.del(`${this.TRIED_PREFIX}${id}`);
     await this.redis.del(`${this.RETRY_COUNT_PREFIX}${id}`);
-
-    // Try assign first time
     await this.tryAssignDriver(id);
   }
 
-  /**
-   * Core: assign driver by querying geo dynamically.
-   */
   async tryAssignDriver(tripId: string): Promise<void> {
     const raw = await this.redis.get(`${this.TRIP_META}${tripId}`);
-    if (!raw) {
-      this.logger.warn(`No trip meta found for ${tripId}`);
-      return;
-    }
+    if (!raw) return;
     const trip = JSON.parse(raw) as TripMatchingRequest;
 
     const triedKey = `${this.TRIED_PREFIX}${tripId}`;
@@ -79,8 +63,8 @@ export class MatchingService {
     };
 
     const candidates = await this.driverLockService.findNearbyDrivers(query);
+
     if (!candidates.length) {
-      // this.logger.warn(`No nearby drivers found for trip ${tripId}`);
       await this.handleUnassignedTrip(tripId);
       return;
     }
@@ -89,6 +73,7 @@ export class MatchingService {
       if (triedDrivers.has(d.id)) continue;
 
       const lockKey = `${this.LOCK_PREFIX}${d.id}`;
+      // ioredis set returns "OK" when set, null otherwise
       const locked = await this.redis.set(
         lockKey,
         tripId,
@@ -98,6 +83,7 @@ export class MatchingService {
       );
       if (!locked) continue;
 
+      // set trip by driver
       await this.redis.set(
         `${this.TRIP_BY_DRIVER}${d.id}`,
         tripId,
@@ -105,47 +91,36 @@ export class MatchingService {
         this.TRIP_BY_DRIVER_TTL,
       );
 
+      // mark tried
       await this.redis.sadd(triedKey, d.id);
       await this.redis.expire(triedKey, this.TRIED_TTL);
 
-      await this.publishNotification('driver.assigned', {
+      // publish to notification exchange with driver-specific routing key
+      await this.publishNotification(`driver.assigned`, {
         tripId,
         driverId: d.id,
         trip,
         expiresIn: this.LOCK_TTL,
       });
 
-      this.logger.log(
-        `Assigned trip ${tripId} -> driver ${d.id} (lock TTL ${this.LOCK_TTL}s)`,
-      );
       return;
     }
 
-    // this.logger.warn(
-    //   `All current nearby drivers unavailable for trip ${tripId}`,
-    // );
     await this.handleUnassignedTrip(tripId);
   }
 
-  /**
-   * Retry limit handler for unassigned trips.
-   */
   private async handleUnassignedTrip(tripId: string) {
     const retryKey = `${this.RETRY_COUNT_PREFIX}${tripId}`;
     const count = await this.redis.incr(retryKey);
     await this.redis.expire(retryKey, this.TRIED_TTL);
 
     if (count > this.MAX_RETRY) {
-      this.logger.warn(`Trip ${tripId} exceeded max retry (${this.MAX_RETRY})`);
-      if (process.env.PERF_TEST_MODE !== 'true') {
-        this.channel.publish('driver.events', 'driver.timeout', { tripId });
-      }
-      await this.publishNotification('trip.failed', { tripId });
+      this.channel.publish('driver.events', 'driver.timeout', { tripId });
       return;
     }
 
-    // Optionally, small delay before retry to avoid spamming
-    setTimeout(() => this.tryAssignDriver(tripId), 1000 * count);
+    const delay = Math.min(50 * 2 ** count, 3000);
+    setTimeout(() => this.tryAssignDriver(tripId), delay);
   }
 
   async onDriverTimeoutOrRejected(
@@ -153,16 +128,10 @@ export class MatchingService {
     driverId: string,
     reason: 'timeout' | 'rejected',
   ) {
-    this.logger.warn(
-      `onDriverTimeoutOrRejected: trip=${tripId} driver=${driverId} reason=${reason}`,
-    );
-
     await this.redis.del(`${this.LOCK_PREFIX}${driverId}`);
     await this.redis.del(`${this.TRIP_BY_DRIVER}${driverId}`);
-
     await this.redis.sadd(`${this.TRIED_PREFIX}${tripId}`, driverId);
     await this.redis.expire(`${this.TRIED_PREFIX}${tripId}`, this.TRIED_TTL);
-
     await this.tryAssignDriver(tripId);
   }
 
@@ -177,81 +146,63 @@ export class MatchingService {
   ): Promise<boolean> {
     const lockKey = `${this.LOCK_PREFIX}${driverId}`;
     const current = await this.redis.get(lockKey);
-    if (current !== tripId) {
-      return false;
-    }
-
     const raw = await this.redis.get(`${this.TRIP_META}${tripId}`);
-    if (!raw) {
-      // this.logger.warn(`No trip meta found for ${tripId}`);
-      return false;
-    }
-    const trip = JSON.parse(raw) as TripMatchingRequest;
-    const { passengerId } = trip;
+    if (current !== tripId || !raw) return false;
 
+    const trip = JSON.parse(raw) as TripMatchingRequest;
     await this.redis.del(lockKey);
     await this.redis.del(`${this.TRIP_BY_DRIVER}${driverId}`);
     await this.redis.del(`${this.TRIED_PREFIX}${tripId}`);
     await this.redis.del(`${this.TRIP_META}${tripId}`);
 
-    // ✅ Đổi status tài xế thành BUSY (tránh match chuyến khác)
-    const result = await this.driverService.updateStatus(
-      driverId,
-      DriverStatus.BUSY,
-    );
+    await this.driverService.updateStatus(driverId, DriverStatus.BUSY);
 
-    if (process.env.PERF_TEST_MODE !== 'true') {
-      this.channel.publish('driver.events', 'driver.accepted', {
-        tripId,
-        driverId,
-      });
-    }
-    // await this.publishNotification('driver.accepted', {
-    //   tripId,
-    //   driverId,
-    //   passengerId,
-    // });
-    // this.logger.log(`Driver ${driverId} accepted trip ${tripId}`);
+    this.channel.publish('driver.events', 'driver.accepted', {
+      tripId,
+      driverId,
+    });
     return true;
   }
 
   async handleTripCancelled(tripId: string) {
-    // this.logger.warn(`handleTripCancelled: trip=${tripId}`);
-
-    // Xoá toàn bộ cache liên quan đến trip
     const triedKey = `${this.TRIED_PREFIX}${tripId}`;
     const retryKey = `${this.RETRY_COUNT_PREFIX}${tripId}`;
     const metaKey = `${this.TRIP_META}${tripId}`;
 
-    // Xoá các driver đang bị lock cho trip này
-    const triedDrivers = await this.redis.smembers(triedKey);
-    for (const driverId of triedDrivers) {
-      const lockKey = `${this.LOCK_PREFIX}${driverId}`;
-      const tripByDriverKey = `${this.TRIP_BY_DRIVER}${driverId}`;
+    const triedDrivers = (await this.redis.smembers(triedKey)) || [];
+    if (triedDrivers.length > 0) {
+      // Batch get lock values
+      const pipeline = this.redis.pipeline();
+      for (const driverId of triedDrivers) {
+        pipeline.get(`${this.LOCK_PREFIX}${driverId}`);
+      }
+      const res = (await pipeline.exec()) as Array<[Error | null, any]>;
+      const driversToClear: string[] = [];
 
-      const lockedTrip = await this.redis.get(lockKey);
-      if (lockedTrip === tripId) {
-        await this.redis.del(lockKey);
-        await this.redis.del(tripByDriverKey);
-        // this.logger.debug(`Cleared lock & cache for driver=${driverId}`);
+      for (let i = 0; i < triedDrivers.length; i++) {
+        const lockVal = res[i]?.[1] as string | null;
+        if (lockVal === tripId) driversToClear.push(triedDrivers[i]);
+      }
+
+      if (driversToClear.length) {
+        const delPipe = this.redis.pipeline();
+        for (const driverId of driversToClear) {
+          delPipe.del(`${this.LOCK_PREFIX}${driverId}`);
+          delPipe.del(`${this.TRIP_BY_DRIVER}${driverId}`);
+        }
+        await delPipe.exec();
       }
     }
 
-    // Xoá các key liên quan đến trip
     await this.redis.del(triedKey, retryKey, metaKey);
 
-    // Gửi thông báo để driver app huỷ tìm kiếm nếu đang hiển thị popup
     await this.publishNotification('trip.cancelled', { tripId });
-
-    // this.logger.log(`Trip ${tripId} cancelled and caches cleared`);
   }
 
   private async publishNotification(routingKey: string, payload: any) {
     try {
-      if (process.env.PERF_TEST_MODE !== 'true') {
-        this.channel.publish('notification', routingKey, payload);
-      }
-      this.logger.log(`Published ${routingKey}`);
+      // ChannelWrapper.publish accepts (exchange, routingKey, content)
+      this.channel.publish('notification', routingKey, payload);
     } catch (err) {
       this.logger.error('publishNotification failed', err as any);
     }

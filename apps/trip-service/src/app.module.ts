@@ -28,6 +28,7 @@ import { RabbitmqModule } from '@repo/shared';
       exchanges: [
         { name: 'trip.events', type: 'topic' },
         { name: 'driver.events', type: 'topic' },
+        { name: 'notification', type: 'topic' },
       ],
     }),
     TripModule,

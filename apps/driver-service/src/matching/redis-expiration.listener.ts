@@ -39,15 +39,15 @@ export class RedisExpirationListener implements OnModuleInit {
             `${this.TRIP_BY_DRIVER}${driverId}`,
           );
           if (!tripId) {
-            this.logger.debug(
-              `Expired lock ${key} but no trip mapping found (maybe cleaned).`,
-            );
+            // this.logger.debug(
+            //   `Expired lock ${key} but no trip mapping found (maybe cleaned).`,
+            // );
             return;
           }
 
-          this.logger.warn(
-            `Lock expired for driver ${driverId} (trip ${tripId}) -> retrying matching`,
-          );
+          // this.logger.warn(
+          //   `Lock expired for driver ${driverId} (trip ${tripId}) -> retrying matching`,
+          // );
           // inform matching service: driver timed out for this trip
           await this.matchingService.onDriverTimeoutOrRejected(
             tripId,
@@ -56,7 +56,7 @@ export class RedisExpirationListener implements OnModuleInit {
           );
         }
       } catch (err) {
-        this.logger.error('Error handling expired key message', err as any);
+        //this.logger.error('Error handling expired key message', err as any);
       }
     });
 
