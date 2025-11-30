@@ -18,7 +18,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.3'
+          cpus: '0.8'
           memory: 400M
 
   user-db:
@@ -37,7 +37,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.30'
+          cpus: '0.50'
           memory: 400M
 
   redis:
@@ -54,8 +54,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.35'
-          memory: 300M
+          cpus: '0.5'
+          memory: 400M
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
@@ -73,7 +73,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.40'
+          cpus: '0.60'
           memory: 600M
 
   # -------------------------
@@ -188,7 +188,7 @@ services:
       resources:
         limits:
           cpus: '0.4'
-          memory: 100M
+          memory: 150M
 
   # -------------------------
   # HAPRoxy TCP LBs FOR MICROSERVICES
