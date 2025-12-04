@@ -30,59 +30,156 @@ Tất cả các service giao tiếp qua **REST API** và **event bất đồng b
 
 ```mermaid
 flowchart LR
+  %% ===========================
   %% CLIENT LAYER
+  %% ===========================
   subgraph Clients["Client Apps"]
     Passenger["Passenger App (Mobile)"]
     DriverApp["Driver App (Mobile)"]
   end
 
+  %% ===========================
   %% SERVICE LAYER
+  %% ===========================
   subgraph Services["Backend Microservices"]
-    ApiGateway["ApiGateway"]
-    AuthSvc["AuthService"]
-    UserSvc["UserService"]
+    ApiGateway["API Gateway\n- Auth validation\n- Light Redis Cache"]
+    UserSvc["UserService\n(Login, User Info)"]
     TripSvc["TripService"]
-    DriverSvc["DriverService"]
-    NotificationSvc["NotificationService"]
-    PaymentSvc["PaymentService"]
+    DriverSvc["DriverService\nRedis Geo/State Cache"]
   end
 
-  %% INFRASTRUCTURE
+  %% ===========================
+  %% INFRASTRUCTURE LAYER
+  %% ===========================
   subgraph Infra["Infrastructure"]
-    PostgresUser["Postgres (users, driver_profiles)"]
-    PostgresTrip["Postgres (trips, trip_rating)"]
-    RedisGeo["Redis (geo cache & driver location)"]
-    MQ["RabbitMQ Pub/Sub"]
+    RedisGateway["Redis (Gateway Cache)"]
+    RedisDriver["Redis (Driver Cache/Geo)"]
+    PostgresUser["PostgreSQL (User DB)"]
+    PostgresTrip["PostgreSQL (Trip DB)"]
+    MQ["RabbitMQ (Event Bus)"]
   end
 
-  %% RELATIONS
-  Passenger --> |RESTful/Websocket| ApiGateway
-  DriverApp --> |RESTful/Websocket| ApiGateway
+  %% ===========================
+  %% CLIENT → GATEWAY
+  %% ===========================
+  Passenger --> |HTTP/REST/WebSocket| ApiGateway
+  DriverApp --> |HTTP/REST/WebSocket| ApiGateway
 
-  ApiGateway --> |TCP| AuthSvc
-  ApiGateway --> |TCP| UserSvc
-  ApiGateway --> |TCP| TripSvc
-  ApiGateway --> |TCP| DriverSvc
+  %% ===========================
+  %% GATEWAY → SERVICES
+  %% ===========================
+  ApiGateway --> |HTTP| UserSvc
+  ApiGateway --> |HTTP| TripSvc
+  ApiGateway --> |HTTP| DriverSvc
 
-  TripSvc -->|Push Event| MQ
-  MQ --> |Listen| DriverSvc
-  DriverSvc --> |Push Event| MQ
-  MQ --> |Listen| TripSvc
+  %% ===========================
+  %% AUTH FLOW (LOGIN)
+  %% ===========================
+  UserSvc --> |Login/Auth Data| ApiGateway
 
-  DriverSvc --> RedisGeo
-  MQ --> |Listen| NotificationSvc
-  NotificationSvc -->|Push notification| DriverApp
-
+  %% ===========================
+  %% DATABASE CONNECTIONS
+  %% ===========================
   UserSvc --> PostgresUser
-
-  TripSvc -->|Ghi nhận doanh thu| PaymentSvc
-
   TripSvc --> PostgresTrip
 
-  %% ALIGN LAYERS
+  %% ===========================
+  %% REDIS CACHE
+  %% ===========================
+  ApiGateway --> RedisGateway
+  DriverSvc --> RedisDriver
+
+  %% ===========================
+  %% RABBITMQ EVENTS
+  %% ===========================
+  TripSvc --> |Publish Trip Events| MQ
+  MQ --> |Consume Driver Events| DriverSvc
+
+  DriverSvc --> |Publish Driver Events| MQ
+  MQ --> |Consume Trip Events| TripSvc
+
+  %% ===========================
+  %% ALIGNMENT
+  %% ===========================
   Clients --- Services --- Infra
 ```
 ---
+Bản đơn giản:
+```mermaid
+flowchart LR
+  %% ===========================
+  %% CLIENT LAYER
+  %% ===========================
+  subgraph Clients["Client Apps"]
+    Passenger["Passenger App (Mobile)"]
+    DriverApp["Driver App (Mobile)"]
+  end
+
+  %% ===========================
+  %% SERVICE LAYER
+  %% ===========================
+  subgraph Services["Backend Microservices"]
+    ApiGateway["API Gateway\n- Auth validation\n- Light Redis Cache"]
+    UserSvc["UserService\n(Login, User Info)"]
+    TripSvc["TripService"]
+    DriverSvc["DriverService\nRedis Geo/State Cache"]
+  end
+
+  %% ===========================
+  %% INFRASTRUCTURE LAYER
+  %% ===========================
+  subgraph Infra["Infrastructure"]
+    RedisGateway["Redis (Gateway Cache)"]
+    RedisDriver["Redis (Driver Cache/Geo)"]
+    PostgresUser["PostgreSQL (User DB)"]
+    PostgresTrip["PostgreSQL (Trip DB)"]
+    MQ["RabbitMQ (Event Bus)"]
+  end
+
+  %% ===========================
+  %% CLIENT → GATEWAY
+  %% ===========================
+  Passenger --> |HTTP/REST/WebSocket| ApiGateway
+  DriverApp --> |HTTP/REST/WebSocket| ApiGateway
+
+  %% ===========================
+  %% GATEWAY → SERVICES
+  %% ===========================
+  ApiGateway --> |HTTP| UserSvc
+  ApiGateway --> |HTTP| TripSvc
+  ApiGateway --> |HTTP| DriverSvc
+
+  %% ===========================
+  %% AUTH FLOW (LOGIN)
+  %% ===========================
+  UserSvc --> |Login/Auth Data| ApiGateway
+
+  %% ===========================
+  %% DATABASE CONNECTIONS
+  %% ===========================
+  UserSvc --> PostgresUser
+  TripSvc --> PostgresTrip
+
+  %% ===========================
+  %% REDIS CACHE
+  %% ===========================
+  ApiGateway --> RedisGateway
+  DriverSvc --> RedisDriver
+
+  %% ===========================
+  %% RABBITMQ EVENTS
+  %% ===========================
+  TripSvc --> |Publish Trip Events| MQ
+  MQ --> |Consume Driver Events| DriverSvc
+
+  DriverSvc --> |Publish Driver Events| MQ
+  MQ --> |Consume Trip Events| TripSvc
+
+  %% ===========================
+  %% ALIGNMENT
+  %% ===========================
+  Clients --- Services --- Infra
+```
 ## 3. Data Schema
 ### 3.1 User-service schema
 ``` mermaid
