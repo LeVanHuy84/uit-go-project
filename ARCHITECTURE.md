@@ -147,11 +147,6 @@ flowchart LR
   ApiGateway --> |TCP| DriverSvc
 
   %% ===========================
-  %% AUTH FLOW (LOGIN)
-  %% ===========================
-  UserSvc --> |Login/User Data| ApiGateway
-
-  %% ===========================
   %% DATABASE CONNECTIONS
   %% ===========================
   UserSvc --> PostgresUser
