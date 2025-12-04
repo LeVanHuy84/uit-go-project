@@ -111,26 +111,24 @@ flowchart LR
   %% CLIENT LAYER
   %% ===========================
   subgraph Clients["Client Apps"]
-    Passenger["Passenger App (Mobile)"]
-    DriverApp["Driver App (Mobile)"]
+    Client["Client"]
   end
 
   %% ===========================
   %% SERVICE LAYER
   %% ===========================
   subgraph Services["Backend Microservices"]
-    ApiGateway["API Gateway\n- Auth validation\n- Light Redis Cache"]
-    UserSvc["UserService\n(Login, User Info)"]
+    ApiGateway["API Gateway"]
+    UserSvc["UserService"]
     TripSvc["TripService"]
-    DriverSvc["DriverService\nRedis Geo/State Cache"]
+    DriverSvc["DriverService"]
   end
 
   %% ===========================
   %% INFRASTRUCTURE LAYER
   %% ===========================
   subgraph Infra["Infrastructure"]
-    RedisGateway["Redis (Gateway Cache)"]
-    RedisDriver["Redis (Driver Cache/Geo)"]
+    Redis["Redis (Driver Cache/Geo)"]
     PostgresUser["PostgreSQL (User DB)"]
     PostgresTrip["PostgreSQL (Trip DB)"]
     MQ["RabbitMQ (Event Bus)"]
@@ -152,7 +150,7 @@ flowchart LR
   %% ===========================
   %% AUTH FLOW (LOGIN)
   %% ===========================
-  UserSvc --> |Login/Auth Data| ApiGateway
+  UserSvc --> |Login/User Data| ApiGateway
 
   %% ===========================
   %% DATABASE CONNECTIONS
@@ -163,8 +161,7 @@ flowchart LR
   %% ===========================
   %% REDIS CACHE
   %% ===========================
-  ApiGateway --> RedisGateway
-  DriverSvc --> RedisDriver
+  DriverSvc --> Redis
 
   %% ===========================
   %% RABBITMQ EVENTS
