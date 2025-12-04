@@ -137,8 +137,7 @@ flowchart LR
   %% ===========================
   %% CLIENT → GATEWAY
   %% ===========================
-  Passenger --> |HTTP/REST/WebSocket| ApiGateway
-  DriverApp --> |HTTP/REST/WebSocket| ApiGateway
+  Client --> |HTTP/WebSocket| ApiGateway
 
   %% ===========================
   %% GATEWAY → SERVICES
