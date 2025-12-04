@@ -142,9 +142,9 @@ flowchart LR
   %% ===========================
   %% GATEWAY → SERVICES
   %% ===========================
-  ApiGateway --> |HTTP| UserSvc
-  ApiGateway --> |HTTP| TripSvc
-  ApiGateway --> |HTTP| DriverSvc
+  ApiGateway --> |TCP| UserSvc
+  ApiGateway --> |TCP| TripSvc
+  ApiGateway --> |TCP| DriverSvc
 
   %% ===========================
   %% AUTH FLOW (LOGIN)
