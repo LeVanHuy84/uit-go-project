@@ -6,6 +6,7 @@ export const DRIVER_MESSAGE = {
 };
 
 export const TRIP_MESSAGE = {
+  GET_PRICE_ESTIMATE: 'get-price-estimate',
   CREATE_TRIP: 'create-trip',
   GET_TRIP_BY_ID: 'get-trip',
   CANCEL_TRIP: 'cancel-trip',

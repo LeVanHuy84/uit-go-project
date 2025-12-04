@@ -6,6 +6,11 @@ import { CreateTripDto, CreateTripRatingDto, TRIP_MESSAGE } from '@repo/shared';
 export class TripController {
   constructor(private readonly tripService: TripService) {}
 
+  @MessagePattern(TRIP_MESSAGE.GET_PRICE_ESTIMATE)
+  getPriceEstimate(@Payload() dto: CreateTripDto) {
+    return this.tripService.getPriceEstimate(dto);
+  }
+
   @MessagePattern(TRIP_MESSAGE.CREATE_TRIP)
   create(@Payload() data: { dto: CreateTripDto; userId: string }) {
     return this.tripService.create(data.dto, data.userId);

@@ -22,6 +22,11 @@ export class TripController {
     private readonly tripServiceClient: ClientProxy,
   ) {}
 
+  @Post('price-estimate')
+  getPriceEstimate(@Body() dto: CreateTripDto) {
+    return this.tripServiceClient.send(TRIP_MESSAGE.GET_PRICE_ESTIMATE, dto);
+  }
+
   @Get(':id')
   getTripById(@Param('id') id: string, @Req() req) {
     const userId = req.user?.userId;

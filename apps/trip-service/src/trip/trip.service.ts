@@ -28,6 +28,17 @@ export class TripService {
     private tripRatingRepo: Repository<TripRating>,
     @Inject('RABBITMQ_CHANNEL') private readonly channel: ChannelWrapper,
   ) {}
+
+  getPriceEstimate(dto: CreateTripDto): number {
+    const estimatedFare = this.calculateEstimatedFare(
+      dto.pickup.lat,
+      dto.pickup.lng,
+      dto.dropOff.lat,
+      dto.dropOff.lng,
+    );
+    return estimatedFare;
+  }
+
   async create(dto: CreateTripDto, userId: string): Promise<TripResponseDto> {
     const estimatedFare = this.calculateEstimatedFare(
       dto.pickup.lat,
@@ -171,14 +182,18 @@ export class TripService {
     destinationLat: number,
     destinationLng: number,
   ): number {
-    // Placeholder logic for fare calculation
-    const distance = Math.sqrt(
-      Math.pow(destinationLat - originLat, 2) +
-        Math.pow(destinationLng - originLng, 2),
+    // Tính đúng khoảng cách theo km
+    const distance = this.haversineDistance(
+      originLat,
+      originLng,
+      destinationLat,
+      destinationLng,
     );
+
     const baseFare = 10000;
     const perKmRate = 5000;
-    return baseFare + distance * perKmRate;
+
+    return Math.round(baseFare + distance * perKmRate);
   }
   private haversineDistance(
     lat1: number,
