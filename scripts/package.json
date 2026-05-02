@@ -1,0 +1,15 @@
+{
+  "type": "module",
+  "scripts": {
+    "profile": "docker compose run --rm k6 run /scripts/profile.js",
+    "lis": "node scripts/driver-listener.js",
+    "multi": "node scripts/driver_demo_multi.js",
+    "ping": "docker compose run --rm k6 run /scripts/ping-location.js",
+    "trip": "docker compose run --rm k6 run /scripts/trip-rps.js"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.9",
+    "axios": "^1.13.2",
+    "papaparse": "^5.5.3"
+  }
+}

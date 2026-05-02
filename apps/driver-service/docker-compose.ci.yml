@@ -1,0 +1,23 @@
+services:
+  driver-service:
+    build:
+      context: ../..
+      dockerfile: ./apps/driver-service/Dockerfile
+    image: uitgo/driver-service:${GITHUB_SHA:-latest}
+    environment:
+      - NODE_ENV=production
+      - REDIS_HOST=redis
+      - RABBIT_URL=amqp://rabbitmq
+    ports:
+      - '4003:4003'
+    depends_on:
+      - redis
+      - rabbitmq
+
+  redis:
+    image: redis:7-alpine
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - '15672:15672'
