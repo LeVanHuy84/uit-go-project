@@ -4,7 +4,7 @@ import http from 'k6/http';
 import { check } from 'k6';
 
 // Backend URL
-const BE_URL = 'http://gateway-lb:4000/api/v1';
+const BE_URL = 'http://gateway-lb/api/v1';
 
 // Load tokens from CSV
 const usersWithTokens = new SharedArray('users', () => {

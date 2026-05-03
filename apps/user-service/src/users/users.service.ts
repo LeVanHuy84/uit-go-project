@@ -12,6 +12,7 @@ import {
   UserRoleEnum,
 } from '@repo/shared';
 import { UserRole } from '@prisma/client';
+import { RpcException } from '@nestjs/microservices';
 
 @Injectable()
 export class UsersService {
@@ -21,7 +22,12 @@ export class UsersService {
     const existing = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
-    if (existing) throw new ConflictException('Email already in use');
+    if (existing) {
+      throw new RpcException({
+        statusCode: 409,
+        message: 'Email already in use',
+      });
+    }
 
     const hashed = await argon2.hash(dto.password, {
       type: argon2.argon2id,

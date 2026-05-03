@@ -257,6 +257,44 @@ services:
           cpus: '0.15'
           memory: 80M
 
+  # -------------------------
+  # OBSERVABILITY
+  # -------------------------
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: prometheus
+    restart: unless-stopped
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - ride-sharing-net
+    depends_on:
+      - gateway-lb
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - ride-sharing-net
+    depends_on:
+      - prometheus
+
 networks:
   ride-sharing-net:
     driver: bridge
@@ -266,3 +304,5 @@ volumes:
   rabbitmq-data:
   user-data:
   trip-data:
+  prometheus-data:
+  grafana-data:
