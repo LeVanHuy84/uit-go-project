@@ -8,6 +8,9 @@ import { JwtAuthGuard } from './modules/auth/jwt-auth.guard';
 import { TripModule } from './modules/trip/trip.module';
 import { UserModule } from './modules/user/user.module';
 import { RedisModule } from '@nestjs-modules/ioredis';
+import { MetricsModule } from './common/metrics/metrics.module';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { MetricsInterceptor } from './common/metrics/metrics.interceptor';
 
 @Module({
   imports: [
@@ -27,12 +30,17 @@ import { RedisModule } from '@nestjs-modules/ioredis';
     AuthModule,
     TripModule,
     UserModule,
+    MetricsModule,
   ],
   controllers: [],
   providers: [
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: MetricsInterceptor,
     },
     {
       provide: APP_PIPE,

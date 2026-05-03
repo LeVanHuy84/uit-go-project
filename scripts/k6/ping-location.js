@@ -3,7 +3,7 @@ import { SharedArray } from 'k6/data';
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 
-const BE_URL = 'http://gateway-lb:4000/api/v1';
+const BE_URL = 'http://gateway-lb/api/v1';
 
 // Load drivers
 const drivers = new SharedArray('drivers', () => {
@@ -18,7 +18,7 @@ const drivers = new SharedArray('drivers', () => {
 
 export const options = {
   vus: drivers.length, // mỗi VU = 1 driver
-  duration: '2m',
+  duration: '40m', // chạy đủ lâu để thấy các giai đoạn tăng dần
 };
 
 // Random location generator
@@ -56,7 +56,7 @@ export default function () {
     const res = http.put(
       `${BE_URL}/drivers/${driver.driverId}/status`,
       body,
-      params
+      params,
     );
 
     check(res, { 'status updated 200': (r) => r.status === 200 });
@@ -71,7 +71,7 @@ export default function () {
   const res2 = http.put(
     `${BE_URL}/drivers/${driver.driverId}/location`,
     location,
-    params
+    params,
   );
 
   check(res2, { 'location updated 200': (r) => r.status === 200 });

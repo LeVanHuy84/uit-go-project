@@ -1,22 +1,18 @@
-// demo/scripts/driver_demo_single_sub.js
 import amqp from 'amqplib';
 import fs from 'fs';
 import Papa from 'papaparse';
 import axios from 'axios';
 
-// ===== CONFIG =====
 const BE_URL = 'http://localhost:4000/api/v1';
 const RABBITMQ = 'amqp://guest:guest@localhost:5672';
-const DRIVER_CSV = './scripts/csv/driver_with_all.csv';
+const DRIVER_CSV = './k6/csv/driver_with_all.csv';
 
-// ===== AXIOS =====
 const http = axios.create({
   timeout: 5000,
   maxRedirects: 0,
   validateStatus: () => true,
 });
 
-// ===== LOAD DRIVERS CSV =====
 function loadDrivers(path) {
   const raw = fs.readFileSync(path, 'utf8');
   const parsed = Papa.parse(raw, { header: false });
@@ -37,7 +33,6 @@ function loadDrivers(path) {
 
 const drivers = loadDrivers(DRIVER_CSV);
 
-// ===== STATISTICS =====
 let stats = {
   assigned: 0,
   accepted: 0,
@@ -46,40 +41,34 @@ let stats = {
   failed: 0,
 };
 
-// ===== ACCEPT & COMPLETE =====
 async function acceptTrip(driver, tripId) {
   stats.assigned++;
   stats.requests++;
   try {
-    // accept
     await http.post(
       `${BE_URL}/drivers/accept`,
       { tripId, driverId: driver.driverId },
-      { headers: { Authorization: `Bearer ${driver.token}` } }
+      { headers: { Authorization: `Bearer ${driver.token}` } },
     );
     stats.accepted++;
-    // console.log(`✅ Driver ${driver.driverId} ACCEPTED trip ${tripId}`);
 
-    // simulate complete after short delay
     await new Promise((r) => setTimeout(r, 2000));
     stats.requests++;
     await http.post(
       `${BE_URL}/trips/${tripId}/complete`,
       {},
-      { headers: { Authorization: `Bearer ${driver.token}` } }
+      { headers: { Authorization: `Bearer ${driver.token}` } },
     );
     stats.completed++;
-    // console.log(`✅ Driver ${driver.driverId} COMPLETED trip ${tripId}`);
   } catch (err) {
     stats.failed++;
     console.error(
-      `⚠️ Error in accept/complete for driver ${driver.driverId}:`,
-      err.response?.data || err.message
+      `Error in accept/complete for driver ${driver.driverId}:`,
+      err.response?.data || err.message,
     );
   }
 }
 
-// ===== SUBSCRIBE MQ =====
 async function listenAssigns() {
   const conn = await amqp.connect(RABBITMQ);
   const ch = await conn.createChannel();
@@ -90,7 +79,7 @@ async function listenAssigns() {
   const q = await ch.assertQueue('', { exclusive: true });
   await ch.bindQueue(q.queue, EXCHANGE, 'driver.assigned');
 
-  console.log('🚀 Driver simulator listening for assignments...');
+  console.log('Driver simulator listening for assignments...');
 
   ch.consume(
     q.queue,
@@ -104,26 +93,22 @@ async function listenAssigns() {
         if (!driver) return;
 
         if (routing.endsWith('.assigned')) {
-          // console.log(
-          //   `🔔 Received assign for driver ${driver.driverId}: trip ${body.tripId}`
-          // );
           await acceptTrip(driver, body.tripId);
         }
       } catch (err) {
         stats.failed++;
-        console.error('⚠️ MQ message parse error', err);
+        console.error('MQ message parse error', err);
       }
     },
-    { noAck: true }
+    { noAck: true },
   );
 
   conn.on('close', () => {
-    console.log('❌ MQ connection closed, reconnecting...');
+    console.log('MQ connection closed, reconnecting...');
     setTimeout(listenAssigns, 2000);
   });
 }
 
-// ===== SUMMARY ON EXIT =====
 process.on('SIGINT', () => {
   console.log('\n===== SUMMARY =====');
   console.log('assigned:', stats.assigned);
@@ -135,5 +120,4 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-// ===== START =====
 listenAssigns();
