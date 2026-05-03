@@ -1,0 +1,7 @@
+file,scenario,total_requests,avg_req_duration,p95,errors,checks_passed,checks_failed
+"full-flow-1777804931841.json","normal",2763,"21.92","56.18",0,2763,0
+"full-flow-1777804931841.json","stress",38809,"45.23","90.20",2,38807,2
+"full-flow-1777804931841.json","spike",6124,"34.90","65.57",2,6122,2
+"full-flow-1777804931841.json","soak",50549,"29.32","71.00",3,50546,3
+"ping-location-1777804931841.json","default",1050,"6.05","36.43",0,1050,0
+"smoke-normal-1777804883052.json","normal",256,"15.23","56.55",0,256,0

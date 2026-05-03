@@ -1,359 +1,90 @@
-1. Test LOGIN
-  
-█ THRESHOLDS
-
-    http_req_duration
-    ✓ 'p(95)<400' p(95)=76.83ms
-
-    http_req_failed
-    ✓ 'rate<0.001' rate=0.00%
-
-
-  █ TOTAL RESULTS
-
-    checks_total.......: 5549    50.410779/s
-    checks_succeeded...: 100.00% 5549 out of 5549
-    checks_failed......: 0.00%   0 out of 5549
-
-    ✓ login success
-
-    HTTP
-    http_req_duration..............: avg=68.21ms min=42.32ms med=66.72ms max=768.54ms p(90)=73.1ms  p(95)=76.83ms
-      { expected_response:true }...: avg=68.21ms min=42.32ms med=66.72ms max=768.54ms p(90)=73.1ms  p(95)=76.83ms
-    http_req_failed................: 0.00%  0 out of 5549
-    http_reqs......................: 5549   50.410779/s
-
-    EXECUTION
-    iteration_duration.............: avg=68.49ms min=42.54ms med=66.99ms max=768.94ms p(90)=73.42ms p(95)=77.17ms
-    iterations.....................: 5549   50.410779/s
-    vus............................: 6      min=0         max=12
-    vus_max........................: 100    min=100       max=100
-
-    NETWORK
-    data_received..................: 3.6 MB 33 kB/s
-    data_sent......................: 1.1 MB 9.7 kB/s
 
 
 
-                                                                                                        
-running (1m50.1s), 000/100 VUs, 5549 complete and 0 interrupted iterations                              
-capacity_test ✓ [======================================] 000/100 VUs  1m50s  100.00 iters/s 
+
+  source=console
 
 
 
 
 
 
+  source=console
 
 
 
 
 
 
-
-PS D:\Vs Code\NestJS\Test\k6-test> docker compose run --rm k6 run /scripts/test.js
-time="2025-11-24T14:37:11+07:00" level=warning msg="D:\\Vs Code\\NestJS\\Test\\k6-test\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
-
-         /\      Grafana   /‾‾/
-    /\  /  \     |\  __   /  /
-   /  \/    \    | |/ /  /   ‾‾\
-  /          \   |   (  |  (‾)  |
- / __________ \  |_|\_\  \_____/
-
-     execution: local
-        script: /scripts/test.js
-        output: -
-
-     scenarios: (100.00%) 1 scenario, 500 max VUs, 2m20s max duration (incl. graceful stop):
-              * capacity_test: Up to 500.00 iterations/s for 1m50s over 5 stages (maxVUs: 50-500, gracefulStop: 30s)
+  source=console
 
 
+  █ THRESHOLDS 
 
-  █ THRESHOLDS
+    errors_total
+    ✓ 'count<1000' count=7
 
-    http_req_duration
-    ✓ 'p(95)<400' p(95)=170ms
+    http_req_duration{scenario:normal}
+    ✓ 'p(95)<500' p(95)=56.16ms
+
+    http_req_duration{scenario:soak}
+    ✓ 'p(95)<800' p(95)=70.99ms
+
+    http_req_duration{scenario:spike}
+    ✓ 'p(95)<2000' p(95)=65.56ms
+
+    http_req_duration{scenario:stress}
+    ✓ 'p(95)<1200' p(95)=90.19ms
 
     http_req_failed
-    ✓ 'rate<0.001' rate=0.00%
+    ✓ 'rate<0.1' rate=0.00%
+
+    trip_create_success
+    ✓ 'rate>0.8' rate=99.99%
 
 
-  █ TOTAL RESULTS
+  █ TOTAL RESULTS 
 
-    checks_total.......: 29914   271.576434/s
-    checks_succeeded...: 100.00% 29914 out of 29914
-    checks_failed......: 0.00%   0 out of 29914
+    checks_total.......: 98245  37.160464/s
+    checks_succeeded...: 99.99% 98238 out of 98245
+    checks_failed......: 0.00%  7 out of 98245
 
-    ✓ login success
+    ✗ created trip (2xx)
+      ↳  99% — ✓ 98238 / ✗ 7
 
-    HTTP
-    http_req_duration..............: avg=75.78ms min=41.12ms med=62.75ms max=542.9ms  p(90)=134.92ms p(95)=170ms
-      { expected_response:true }...: avg=75.78ms min=41.12ms med=62.75ms max=542.9ms  p(90)=134.92ms p(95)=170ms
-    http_req_failed................: 0.00%  0 out of 29914
-    http_reqs......................: 29914  271.576434/s
-
-    EXECUTION
-    dropped_iterations.............: 85     0.771679/s
-    iteration_duration.............: avg=76.09ms min=41.35ms med=63.05ms max=545.12ms p(90)=135.36ms p(95)=170.42ms
-    iterations.....................: 29914  271.576434/s
-    vus............................: 72     min=3          max=99
-    vus_max........................: 132    min=50         max=132
-
-    NETWORK
-    data_received..................: 19 MB  176 kB/s
-    data_sent......................: 5.7 MB 52 kB/s
-
-
-
-                                                                                                        
-running (1m50.1s), 000/132 VUs, 29914 complete and 0 interrupted iterations                             
-capacity_test ✓ [======================================] 000/132 VUs  1m50s  500.00 iters/s
-
-2. READ HEAVY - get PROFILEs
-PS D:\Vs Code\NestJS\Test\k6-test> docker compose run --rm k6 run /scripts/read-profile.js
-time="2025-11-24T21:46:06+07:00" level=warning msg="D:\\Vs Code\\NestJS\\Test\\k6-test\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
-
-         /\      Grafana   /‾‾/
-    /\  /  \     |\  __   /  /
-   /  \/    \    | |/ /  /   ‾‾\
-  /          \   |   (  |  (‾)  |
- / __________ \  |_|\_\  \_____/
-
-     execution: local
-        script: /scripts/read-profile.js
-        output: -
-
-     scenarios: (100.00%) 1 scenario, 500 max VUs, 2m20s max duration (incl. graceful stop):
-              * read_heavy: Up to 500.00 iterations/s for 1m50s over 5 stages (maxVUs: 50-500, gracefulStop: 30s)
-
-
-
-  █ THRESHOLDS
-
-    http_req_duration
-    ✓ 'p(95)<200' p(95)=110.34ms
-
-    http_req_failed
-    ✓ 'rate<0.01' rate=0.00%
-
-
-  █ TOTAL RESULTS
-
-    checks_total.......: 29538   267.309062/s
-    checks_succeeded...: 100.00% 29538 out of 29538
-    checks_failed......: 0.00%   0 out of 29538
-
-    ✓ status 2xx
+    CUSTOM
+    errors_total...................: 7      0.002648/s
+    trip_create_latency_ms.........: avg=35.876319 min=3      med=24      max=1354     p(90)=67      p(95)=83     
+    trip_create_success............: 99.99% 98238 out of 98245
 
     HTTP
-    http_req_duration..............: avg=29.33ms min=3.18ms med=5.95ms max=512.27ms p(90)=81.65ms p(95)=110.34ms
-      { expected_response:true }...: avg=29.33ms min=3.18ms med=5.95ms max=512.27ms p(90)=81.65ms p(95)=110.34ms
-    http_req_failed................: 0.00% 0 out of 29538
-    http_reqs......................: 29538 267.309062/s
+    http_req_duration..............: avg=35.74ms   min=3.31ms med=23.95ms max=1.35s    p(90)=66.53ms p(95)=83.03ms
+      { expected_response:true }...: avg=35.71ms   min=3.31ms med=23.95ms max=1.35s    p(90)=66.52ms p(95)=83.01ms
+      { scenario:normal }..........: avg=21.92ms   min=4.08ms med=7.38ms  max=468.46ms p(90)=46.53ms p(95)=56.16ms
+      { scenario:soak }............: avg=29.31ms   min=3.32ms med=9.71ms  max=1.35s    p(90)=52.82ms p(95)=70.99ms
+      { scenario:spike }...........: avg=34.9ms    min=4.38ms med=28.22ms max=587.86ms p(90)=55.74ms p(95)=65.56ms
+      { scenario:stress }..........: avg=45.22ms   min=3.31ms med=40.63ms max=595.13ms p(90)=77.45ms p(95)=90.19ms
+    http_req_failed................: 0.00%  7 out of 98245
+    http_reqs......................: 98245  37.160464/s
 
     EXECUTION
-    dropped_iterations.............: 161   1.456996/s
-    iteration_duration.............: avg=29.52ms min=3.39ms med=6.13ms max=512.55ms p(90)=81.79ms p(95)=110.47ms
-    iterations.....................: 29538 267.309062/s
-    vus............................: 203   min=0          max=203
-    vus_max........................: 205   min=50         max=205
+    iteration_duration.............: avg=1.68s     min=4.67ms med=1.71s   max=4.23s    p(90)=2.77s   p(95)=2.9s   
+    iterations.....................: 98245  37.160464/s
+    vus............................: 1      min=0              max=199
+    vus_max........................: 500    min=500            max=500
 
     NETWORK
-    data_received..................: 13 MB 120 kB/s
-    data_sent......................: 11 MB 99 kB/s
+    data_received..................: 59 MB  22 kB/s
+    data_sent......................: 52 MB  20 kB/s
 
 
 
-                                                                                                        
-running (1m50.5s), 000/210 VUs, 29538 complete and 0 interrupted iterations                             
-read_heavy ✓ [======================================] 000/210 VUs  1m50s  500.00 iters/s
 
-3. CREATE TRIP - ONLY
-PS D:\Vs Code\NestJS\Test\k6-test> docker compose run --rm k6 run /scripts/trip-create.js
-time="2025-11-24T22:57:08+07:00" level=warning msg="D:\\Vs Code\\NestJS\\Test\\k6-test\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
-
-         /\      Grafana   /‾‾/
-    /\  /  \     |\  __   /  /
-   /  \/    \    | |/ /  /   ‾‾\
-  /          \   |   (  |  (‾)  |
- / __________ \  |_|\_\  \_____/
-
-     execution: local
-        script: /scripts/trip-create.js
-        output: -
-
-     scenarios: (100.00%) 1 scenario, 800 max VUs, 1m50s max duration (incl. graceful stop):
-              * create_trip: Up to 500.00 iterations/s for 1m20s over 4 stages (maxVUs: 200-800, gracefulStop: 30s)
-
-
-
-  █ THRESHOLDS
-
-    http_req_duration
-    ✓ 'p(95)<500' p(95)=19.46ms
-
-    http_req_failed
-    ✓ 'rate<0.01' rate=0.00%
-
-
-  █ TOTAL RESULTS
-
-    checks_total.......: 20597   257.318781/s
-    checks_succeeded...: 100.00% 20597 out of 20597
-    checks_failed......: 0.00%   0 out of 20597
-
-    ✓ status 2xx
-
-    HTTP
-    http_req_duration..............: avg=8.57ms min=2.92ms med=6.42ms max=75.92ms p(90)=11.3ms  p(95)=19.46ms
-      { expected_response:true }...: avg=8.57ms min=2.92ms med=6.42ms max=75.92ms p(90)=11.3ms  p(95)=19.46ms
-    http_req_failed................: 0.00% 0 out of 20597
-    http_reqs......................: 20597 257.318781/s
-
-    EXECUTION
-    iteration_duration.............: avg=8.81ms min=3.84ms med=6.64ms max=76.24ms p(90)=11.57ms p(95)=19.93ms
-    iterations.....................: 20597 257.318781/s
-    vus............................: 4     min=0          max=32
-    vus_max........................: 200   min=200        max=200
-
-    NETWORK
-    data_received..................: 13 MB 167 kB/s
-    data_sent......................: 12 MB 147 kB/s
-
-
-
-                                                                                                        
-running (1m20.0s), 000/200 VUs, 20597 complete and 0 interrupted iterations                             
-create_trip ✓ [======================================] 000/200 VUs  1m20s  499.97 iters/s
-
-4. CREATE TRIP - có MQ
-`giờ passenger gửi tạo trip xong event rabbitmq qua driver-service matching tài xế sau đó drive-service publish rabbitMQ vào queue notification cho tài xế, mà giờ t cần test luồng e2e
-thì giờ t dùng k6 chỉ test được user gửi create trip thôi chứ ko test được bên phía driver nhận
-t có ý tưởng là k6 vẫn gửi create trip, xong t viết 1 script giả lập mq nghe sự kiện driver tính tổng số noti tạo chuyến từ message_queue xong tài xế chấp nhận chuyến và hoàn thành sau đó so sánh số liệu 2 bên?`
-
-- Trip create:
-
-time="2025-11-26T11:03:52+07:00" level=warning msg="D:\\Vs Code\\NestJS\\Test\\k6-test\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
-
-         /\      Grafana   /‾‾/
-    /\  /  \     |\  __   /  /
-   /  \/    \    | |/ /  /   ‾‾\
-  /          \   |   (  |  (‾)  |
- / __________ \  |_|\_\  \_____/
-
-     execution: local
-        script: /scripts/trip-rps.js
-        output: -
-
-     scenarios: (100.00%) 1 scenario, 500 max VUs, 2m20s max duration (incl. graceful stop):
-              * create_trip: Up to 350.00 iterations/s for 1m50s over 5 stages (maxVUs: 100-500, gracefulStop: 30s)
-
-
-
-  █ THRESHOLDS
-
-    http_req_duration
-    ✓ 'p(95)<500' p(95)=243.99ms
-
-    http_req_failed
-    ✓ 'rate<0.02' rate=0.00%
-
-
-  █ TOTAL RESULTS
-
-    checks_total.......: 19251   174.698155/s
-    checks_succeeded...: 100.00% 19251 out of 19251
-    checks_failed......: 0.00%   0 out of 19251
-
-    ✓ status 2xx
-
-    HTTP
-    http_req_duration..............: avg=59.35ms min=5.02ms med=29.72ms max=377.12ms p(90)=168.61ms p(95)=243.99ms
-      { expected_response:true }...: avg=59.35ms min=5.02ms med=29.72ms max=377.12ms p(90)=168.61ms p(95)=243.99ms
-    http_req_failed................: 0.00% 0 out of 19251
-    http_reqs......................: 19251 174.698155/s
-
-    EXECUTION
-    dropped_iterations.............: 23    0.208719/s
-    iteration_duration.............: avg=59.63ms min=5.2ms  med=29.98ms max=404.79ms p(90)=168.9ms  p(95)=244.34ms
-    iterations.....................: 19251 174.698155/s
-    vus............................: 85    min=0          max=117
-    vus_max........................: 123   min=100        max=123
-
-    NETWORK
-    data_received..................: 13 MB 113 kB/s
-    data_sent......................: 11 MB 100 kB/s
-
-
-
-                                                                                                        
-running (1m50.2s), 000/123 VUs, 19251 complete and 0 interrupted iterations                             
-create_trip ✓ [======================================] 000/123 VUs  1m50s  350.00 iters/s  
-
-- Driver listen, accept and complete trip:
-===== SUMMARY =====
-assigned: 6655
-accepted: 6655
-completed: 6655
-requests: 13310
-failed: 0
-===================
-
-- Update location ping:
-> ping
-> docker compose run --rm k6 run /scripts/ping-location.js
-
-time="2025-11-26T11:03:44+07:00" level=warning msg="D:\\Vs Code\\NestJS\\Test\\k6-test\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
-
-         /\      Grafana   /‾‾/
-    /\  /  \     |\  __   /  /
-   /  \/    \    | |/ /  /   ‾‾\
-  /          \   |   (  |  (‾)  |
- / __________ \  |_|\_\  \_____/
-
-     execution: local
-        script: /scripts/ping-location.js
-        output: -
-
-     scenarios: (100.00%) 1 scenario, 100 max VUs, 2m30s max duration (incl. graceful stop):
-              * default: 100 looping VUs for 2m0s (gracefulStop: 30s)
-
-
-
-  █ TOTAL RESULTS
-
-    checks_total.......: 500     4.146878/s
-    checks_succeeded...: 100.00% 500 out of 500
-    checks_failed......: 0.00%   0 out of 500
-
-    ✓ status updated 200
-    ✓ location updated 200
-
-    HTTP
-    http_req_duration..............: avg=67.61ms min=1.78ms med=71.61ms max=216.06ms p(90)=145.31ms p(95)=171.32ms
-      { expected_response:true }...: avg=67.61ms min=1.78ms med=71.61ms max=216.06ms p(90)=145.31ms p(95)=171.32ms
-    http_req_failed................: 0.00%  0 out of 500
-    http_reqs......................: 500    4.146878/s
-
-    EXECUTION
-    iteration_duration.............: avg=30.09s  min=30s    med=30.02s  max=30.39s   p(90)=30.31s   p(95)=30.35s
-    iterations.....................: 400    3.317502/s
-    vus............................: 100    min=100      max=100
-    vus_max........................: 100    min=100      max=100
-
-    NETWORK
-    data_received..................: 83 kB  685 B/s
-    data_sent......................: 254 kB 2.1 kB/s
-
-
-
-                                                                                                        
-running (2m00.6s), 000/100 VUs, 400 complete and 0 interrupted iterations                               
-default ✓ [======================================] 100 VUs  2m0s 
-
-🧩 TỔNG HỢP KẾT QUẢ 3 BÀI TEST
-| Thành phần          | RPS / Throughput               | p95                  | Error | Kết luận              |
-| ------------------- | ------------------------------ | -------------------- | ----- | --------------------- |
-| **Trip Create API** | 350 RPS                        | 243ms                | 0%    | Tốt, chưa chạm ngưỡng |
-| **Driver Workflow** | ~55 RPS assign+accept+complete | ≈ (gần như realtime) | 0%    | MQ + Logic ổn định    |
-| **Update Location** | ~100 VUs (400 calls)           | 171ms                | 0%    | Redis stable          |
+running (44m03.8s), 0000/0500 VUs, 98245 complete and 0 interrupted iterations
+normal ✓ [======================================] 40 VUs         2m0s
+stress ✓ [======================================] 000/200 VUs    10m0s
+spike  ✓ [======================================] 0000/0500 VUs  30s  005.48 iters/s
+soak   ✓ [======================================] 50 VUs         30m0s
+Main run complete, analyzing results...
+Wrote results/summary.csv and reports/report.md
+✓ All done. Results in results/ and reports/

@@ -4,8 +4,8 @@ import axios from 'axios';
 
 // Cấu hình
 const BE_URL = 'http://localhost:4000/api/v1';
-const INPUT_CSV = './scripts/csv/users.csv'; // file CSV gốc: email,password
-const OUTPUT_CSV = './scripts/csv/users_with_token.csv'; // file CSV có thêm token
+const INPUT_CSV = './k6/csv/users.csv'; // file CSV gốc: email,password
+const OUTPUT_CSV = './k6/csv/users_with_token.csv'; // file CSV có thêm token
 
 // Đọc CSV
 const rawCSV = fs.readFileSync(INPUT_CSV, 'utf8');
@@ -19,13 +19,13 @@ async function login(email, password) {
       { email, password },
       {
         headers: { 'Content-Type': 'application/json' },
-      }
+      },
     );
     return res.data.access_token;
   } catch (err) {
     console.error(
       `Login failed for ${email}:`,
-      err.response?.status || err.message
+      err.response?.status || err.message,
     );
     return '';
   }

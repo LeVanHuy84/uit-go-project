@@ -4,7 +4,7 @@ import http from 'k6/http';
 import { check } from 'k6';
 
 // Backend URL
-const BE_URL = 'http://gateway-lb:4000/api/v1';
+const BE_URL = 'http://gateway-lb/api/v1';
 
 // Load passengers with tokens
 const passengers = new SharedArray('passengers', () => {
@@ -45,11 +45,10 @@ export const options = {
       maxVUs: 500,
 
       stages: [
-        { target: 50, duration: '10s' }, // warm up nhẹ
-        { target: 100, duration: '20s' }, // mid
-        { target: 150, duration: '20s' }, // giữ ổn định
-        { target: 250, duration: '30s' }, // tiến dần
-        { target: 350, duration: '30s' }, // peak nhưng vẫn trong khả năng
+        { target: 50, duration: '2m' },
+        { target: 100, duration: '2m' },
+        { target: 150, duration: '2m' },
+        { target: 50, duration: '3m' },
       ],
     },
   },

@@ -5,9 +5,9 @@ services:
     image: grafana/k6:latest
     container_name: k6
     volumes:
-      - ./scripts:/scripts
+      - ./k6:/k6
     entrypoint: ['k6']
-    working_dir: /scripts
+    working_dir: /k6
     networks:
       - ride-sharing-net
 

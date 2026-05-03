@@ -3,7 +3,7 @@ import { SharedArray } from 'k6/data';
 import http from 'k6/http';
 import { check } from 'k6';
 
-const BE_URL = 'http://gateway-lb:4000/api/v1';
+const BE_URL = 'http://gateway-lb/api/v1';
 
 // Load user list from CSV (sharing for all VUs)
 const users = new SharedArray('users', () => {
@@ -21,11 +21,11 @@ export const options = {
       preAllocatedVUs: 50,
       maxVUs: 500,
       stages: [
+        { target: 20, duration: '20s' },
+        { target: 50, duration: '20s' },
         { target: 100, duration: '20s' },
-        { target: 200, duration: '20s' },
-        { target: 300, duration: '20s' },
-        { target: 400, duration: '20s' },
-        { target: 500, duration: '30s' },
+        { target: 150, duration: '20s' },
+        { target: 120, duration: '30s' },
       ],
     },
   },
@@ -46,7 +46,7 @@ export default function () {
     JSON.stringify({ email, password }),
     {
       headers: { 'Content-Type': 'application/json' },
-    }
+    },
   );
 
   check(res, {

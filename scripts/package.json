@@ -1,11 +1,16 @@
 {
   "type": "module",
   "scripts": {
-    "profile": "docker compose run --rm k6 run /scripts/profile.js",
-    "lis": "node scripts/driver-listener.js",
-    "multi": "node scripts/driver_demo_multi.js",
-    "ping": "docker compose run --rm k6 run /scripts/ping-location.js",
-    "trip": "docker compose run --rm k6 run /scripts/trip-rps.js"
+    "profile": "docker compose run --rm k6 run /k6/profile.js",
+    "lis": "node k6/driver-listener.js",
+    "login": "docker compose run --rm k6 run /k6/login-rps.js",
+    "ping": "docker compose run --rm k6 run /k6/ping-location.js",
+    "trip": "docker compose run --rm k6 run /k6/trip-rps.js",
+    "register:driver": "docker compose run --rm k6 run /k6/register-driver.js",
+    "register:passenger": "docker compose run --rm k6 run /k6/register-passenger.js",
+    "load:test": "node ./run-full-load-test.js",
+    "load:test:sh": "./run-full-load-test.sh",
+    "load:test:ps1": "powershell -ExecutionPolicy Bypass -File ./run-full-load-test.ps1"
   },
   "dependencies": {
     "amqplib": "^0.10.9",

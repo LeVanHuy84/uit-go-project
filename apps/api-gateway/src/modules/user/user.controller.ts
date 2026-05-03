@@ -1,5 +1,6 @@
 import { Controller, Post, Body, Get, Put, Req, Inject } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { HttpException, HttpStatus } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 import {
   CreateDriverProfileDto,
@@ -23,7 +24,19 @@ export class UsersController {
   @Public()
   @Post()
   async register(@Body() dto: CreateUserDto) {
-    return firstValueFrom(this.userClient.send(USER_MESSAGE.CREATE_USER, dto));
+    try {
+      return await firstValueFrom(
+        this.userClient.send(USER_MESSAGE.CREATE_USER, dto),
+      );
+    } catch (err: any) {
+      const message = err?.message ?? err?.error ?? JSON.stringify(err);
+      let status =
+        err?.status ?? err?.statusCode ?? HttpStatus.INTERNAL_SERVER_ERROR;
+      status = Number.isInteger(+status)
+        ? +status
+        : HttpStatus.INTERNAL_SERVER_ERROR;
+      throw new HttpException(message, status);
+    }
   }
 
   @Get('me')

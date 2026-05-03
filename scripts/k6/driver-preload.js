@@ -4,12 +4,14 @@ import axios from 'axios';
 
 // Cấu hình
 const BE_URL = 'http://localhost:4000/api/v1';
-const INPUT_CSV = './scripts/csv/driver.csv'; // file CSV gốc: email,password
-const OUTPUT_CSV = './scripts/csv/driver_with_all.csv'; // file CSV có thêm token, VerhicleType
+const INPUT_CSV = './k6/csv/driver.csv'; // file CSV gốc: email,password
+const OUTPUT_CSV = './k6/csv/driver_with_all.csv'; // file CSV có thêm token, VerhicleType
 
 // Đọc CSV
 const rawCSV = fs.readFileSync(INPUT_CSV, 'utf8');
-const users = Papa.parse(rawCSV, { header: false }).data;
+const users = Papa.parse(rawCSV, {
+  header: false,
+}).data.filter((r) => r && r.length >= 2 && r[0] && r[1]);
 
 // Hàm login lấy token
 async function login(email, password) {
@@ -19,12 +21,12 @@ async function login(email, password) {
       { email, password },
       {
         headers: { 'Content-Type': 'application/json' },
-      }
+      },
     );
     return res.data.access_token;
   } catch (err) {
     throw new Error(
-      `Login failed for ${email}: ${err.response?.status || err.message}`
+      `Login failed for ${email}: ${err.response?.status || err.message}`,
     );
   }
 }
@@ -34,13 +36,14 @@ async function getDriverInfo(token) {
     const res = await axios.get(`${BE_URL}/users/me`, {
       headers: { Authorization: `Bearer ${token}` },
     });
+
     return {
-      vehicleType: res.data.driverProfile.vehicleType,
+      vehicleType: res.data.driverProfile?.vehicleType || 'UNKNOWN',
       userId: res.data.id,
     };
   } catch (err) {
     throw new Error(
-      `Fetching driver info failed: ${err.response?.status || err.message}`
+      `Fetching driver info failed: ${err.response?.status || err.message}`,
     );
   }
 }
